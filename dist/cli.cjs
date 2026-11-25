@@ -14899,7 +14899,7 @@ var import_node_util = require("node:util");
 // package.json
 var package_default = {
   name: "test-verdict",
-  version: "0.2.0",
+  version: "0.3.0",
   description: "Universal test & code coverage PR decorator and merge gate supporting JaCoCo, Cobertura, LCOV, Istanbul/Jest, Go, and OpenCover.",
   type: "module",
   bin: {

@@ -4,9 +4,9 @@
 
 # Test Verdict
 
-Universal test & code coverage PR decorator and merge gate for GitHub Actions and local CI.
+Universal test & code coverage PR decorator and merge gate - available as both a **GitHub Action** and a **standalone CLI tool**.
 
-`test-verdict` auto-detects and aggregates coverage reports across many languages, evaluates test coverage thresholds, comments on your PR and can enforce merge gates, blocking PRs until coverage thresholds are met.
+`test-verdict` auto-detects and aggregates coverage reports across many languages, evaluates test coverage thresholds, comments on your PR and can enforce merge gates, blocking PRs until coverage thresholds are met. Use it directly in GitHub Actions workflows or run it standalone on your machine and in any CI pipeline via `npx test-verdict`.
 
 [![CI](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml/badge.svg)](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/test-verdict.svg)](https://www.npmjs.com/package/test-verdict)
@@ -19,7 +19,7 @@ Universal test & code coverage PR decorator and merge gate for GitHub Actions an
 - **Sticky PR comment & Job Step Summary** - updates a single PR comment in place, with a full breakdown in the workflow summary.
 - **Branch-protection ready** - fails the check on threshold breaches when `enforce: true` so PRs cannot merge until passing.
 - **Fork-PR safe** - gracefully degrades to Job Step Summary + exit-code gating if Github token permissions don't allow commenting.
-- **Zero-dependency local CLI** - run locally or in any CI provider via `npx test-verdict`.
+- **Standalone CLI tool** - zero-dependency CLI you can run locally, in pre-push hooks, or in any CI provider via `npx test-verdict`.
 
 ### Example PR Comment
 
@@ -136,7 +136,7 @@ groups:
 | `passed` | `"true"` or `"false"` |
 | `summary-json` | JSON payload summarizing all groups, metrics, violations, and warnings |
 
-## Local CLI
+## Standalone CLI
 
 Global install:
 
@@ -181,6 +181,25 @@ npm run typecheck
 npm run test:coverage
 npm run build
 ```
+
+### Releasing a New Version
+
+```bash
+npm version patch --no-git-tag-version   # or minor / major
+npm run build
+git add package.json package-lock.json dist/
+git commit -m "chore: release v$(node -p "require('./package.json').version")"
+git push origin main
+```
+
+On push to `main`, `.github/workflows/ci.yml` automatically:
+
+1. Runs typecheck, tests, coverage, and `dist/` verification across Node 22, 24, and 26.
+2. Publishes the new version to npmjs via Trusted Publishing (OIDC) if not already published.
+3. Creates the `v<version>` GitHub Release with auto-generated release notes.
+4. Updates the floating major tag (e.g. `v1` for `v1.x.x`) for GitHub Action consumers.
+
+> To list a release on GitHub Actions Marketplace, edit the created GitHub Release and check **Publish this Action to the GitHub Marketplace**.
 
 ### Contributing a New Format Parser
 
