@@ -30,6 +30,10 @@
     "ci"
   ],
   "author": "Steve Swinsburg",
+  "publishConfig": {
+    "access": "public",
+    "provenance": true
+  },
   "license": "MIT",
   "repository": {
     "type": "git",

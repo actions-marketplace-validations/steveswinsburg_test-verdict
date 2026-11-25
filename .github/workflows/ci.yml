@@ -4,23 +4,100 @@ on:
   push:
     branches: [main]
   pull_request:
+    branches: [main]
 
 jobs:
-  verify:
+  build-and-test:
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node-version: [22.x, 24.x, 26.x]
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          node-version: 24
+          node-version: ${{ matrix.node-version }}
           cache: npm
-
       - run: npm ci
       - run: npm run typecheck
       - run: npm run test:coverage
       - run: npm run build
       - name: Verify dist is up to date
         run: git diff --exit-code dist/
-      - name: Dogfood the test-verdict CLI
+      - name: Dogfood test-verdict CLI
         run: node dist/cli.cjs --files coverage/lcov.info --min-line 80 --markdown
+
+  publish:
+    needs: build-and-test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24.x
+          registry-url: https://registry.npmjs.org
+      # Trusted publishing needs npm >= 11.5.1 (OIDC, no NPM_TOKEN).
+      # Register this workflow filename (ci.yml) as a GitHub Actions
+      # trusted publisher on the npm package settings page.
+      - run: npm install -g npm@latest
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Verify dist is up to date
+        run: git diff --exit-code dist/
+      - name: Publish to npm
+        run: |
+          version="$(node -p "require('./package.json').version")"
+          published="$(npm view "test-verdict@${version}" version 2>/dev/null || true)"
+          if [ "$published" = "$version" ]; then
+            echo "test-verdict@${version} is already on npm, skipping publish"
+          else
+            npm_latest="$(npm view test-verdict version 2>/dev/null || echo '0.0.0')"
+            if [ "$version" != "$npm_latest" ] && [ "$(printf '%s\n%s' "$version" "$npm_latest" | sort -V | head -1)" = "$version" ]; then
+              echo "Publishing test-verdict@${version} with dist-tag release-${version} (npm latest is ${npm_latest})"
+              npm publish --tag "release-${version}"
+            else
+              npm publish
+            fi
+          fi
+      - name: Create GitHub Release
+        id: release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          version="v$(node -p "require('./package.json').version")"
+          if gh release view "$version" >/dev/null 2>&1; then
+            echo "${version} already exists, skipping GitHub Release"
+            echo "created=false" >> "$GITHUB_OUTPUT"
+          else
+            gh release create "$version" --generate-notes --target "$GITHUB_SHA"
+            echo "created=true" >> "$GITHUB_OUTPUT"
+            echo "version=${version}" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Update floating major tag
+        if: steps.release.outputs.created == 'true'
+        env:
+          VERSION: ${{ steps.release.outputs.version }}
+        run: |
+          if [[ "$VERSION" =~ ^v([0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            git fetch --tags --force
+            HIGHEST="$(git tag -l "v${MAJOR}.*.*" | grep -E "^v${MAJOR}\.[0-9]+\.[0-9]+$" | sort -V | tail -n 1)"
+            if [ "$HIGHEST" = "$VERSION" ]; then
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git tag -fa "v${MAJOR}" -m "Update v${MAJOR} tag to ${VERSION}" "$GITHUB_SHA"
+              git push origin "refs/tags/v${MAJOR}" --force
+            else
+              echo "Skipping floating tag v${MAJOR}: ${VERSION} is not the highest tag (${HIGHEST})"
+            fi
+          else
+            echo "Skipping floating major tag update for non-stable tag $VERSION"
+          fi
