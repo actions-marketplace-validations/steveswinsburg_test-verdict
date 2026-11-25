@@ -22,5 +22,5 @@ jobs:
       - run: npm run build
       - name: Verify dist is up to date
         run: git diff --exit-code dist/
-      - name: Dogfood test-verdict CLI
+      - name: Dogfood the test-verdict CLI
         run: node dist/cli.cjs --files coverage/lcov.info --min-line 80 --markdown
