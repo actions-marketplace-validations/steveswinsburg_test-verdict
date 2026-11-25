@@ -1,7 +1,8 @@
 import { build } from 'esbuild';
-import { chmodSync, mkdirSync } from 'node:fs';
+import { chmodSync, mkdirSync, readFileSync } from 'node:fs';
 
 mkdirSync('dist', { recursive: true });
+const { version } = JSON.parse(readFileSync('package.json', 'utf8'));
 
 const commonOptions = {
   bundle: true,
@@ -24,6 +25,9 @@ await Promise.all([
     target: 'node20',
     entryPoints: ['src/cli/main.ts'],
     outfile: 'dist/cli.cjs',
+    define: {
+      __TEST_VERDICT_VERSION__: JSON.stringify(version),
+    },
     banner: {
       js: '#!/usr/bin/env node',
     },

@@ -14896,70 +14896,6 @@ module.exports = __toCommonJS(main_exports);
 var import_node_child_process2 = require("node:child_process");
 var import_node_util = require("node:util");
 
-// package.json
-var package_default = {
-  name: "test-verdict",
-  version: "0.3.1",
-  description: "Universal test & code coverage PR decorator and merge gate supporting JaCoCo, Cobertura, LCOV, Istanbul/Jest, Go, and OpenCover.",
-  type: "module",
-  bin: {
-    "test-verdict": "dist/cli.cjs"
-  },
-  files: [
-    "dist/cli.cjs",
-    "README.md",
-    "LICENSE"
-  ],
-  scripts: {
-    typecheck: "tsc --noEmit",
-    test: "vitest run",
-    "test:coverage": "vitest run --coverage",
-    build: "node scripts/build.mjs"
-  },
-  keywords: [
-    "github-actions",
-    "code-coverage",
-    "jacoco",
-    "cobertura",
-    "lcov",
-    "istanbul",
-    "opencover",
-    "gocover",
-    "pull-request",
-    "ci"
-  ],
-  author: "Steve Swinsburg",
-  publishConfig: {
-    access: "public",
-    provenance: true
-  },
-  license: "MIT",
-  repository: {
-    type: "git",
-    url: "git+https://github.com/steveswinsburg/test-verdict.git"
-  },
-  homepage: "https://github.com/steveswinsburg/test-verdict#readme",
-  bugs: {
-    url: "https://github.com/steveswinsburg/test-verdict/issues"
-  },
-  engines: {
-    node: ">=20"
-  },
-  devDependencies: {
-    "@actions/core": "^3.0.1",
-    "@actions/github": "^9.1.1",
-    "@types/node": "^22.10.2",
-    "@vitest/coverage-v8": "^5.1.1",
-    esbuild: "^0.28.2",
-    "fast-glob": "^3.3.3",
-    "fast-xml-parser": "^5.12.1",
-    picomatch: "^4.0.2",
-    typescript: "^5.7.2",
-    vitest: "^5.1.1",
-    yaml: "^2.7.0"
-  }
-};
-
 // src/core/metrics.ts
 function computePct(covered, total) {
   if (total === 0) return 100;
@@ -20707,7 +20643,7 @@ function buildSummaryJson(result) {
 }
 
 // src/cli/main.ts
-var VERSION = package_default.version;
+var VERSION = true ? "0.3.1" : "0.0.0-dev";
 function printHelp() {
   console.log(`test-verdict v${VERSION} \u2014 Universal coverage report aggregator and PR gate
 
