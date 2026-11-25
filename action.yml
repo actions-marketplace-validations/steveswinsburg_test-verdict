@@ -1,10 +1,10 @@
-name: 'Test Verdict'
+name: 'Test Verdict Action'
 description: 'Universal test & code coverage PR decorator and merge gate for every test report format.'
 author: 'Steve Swinsburg'
 
 branding:
   icon: 'shield'
-  color: 'blue'
+  color: 'orange'
 
 inputs:
   files:
