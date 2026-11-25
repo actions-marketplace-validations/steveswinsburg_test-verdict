@@ -3,10 +3,14 @@
   "version": "0.1.0",
   "description": "Universal test & code coverage PR decorator and merge gate supporting JaCoCo, Cobertura, LCOV, Istanbul/Jest, Go, and OpenCover.",
   "type": "module",
-  "main": "./dist/index.cjs",
   "bin": {
-    "test-verdict": "./dist/cli.cjs"
+    "test-verdict": "dist/cli.cjs"
   },
+  "files": [
+    "dist/cli.cjs",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
@@ -25,23 +29,30 @@
     "pull-request",
     "ci"
   ],
+  "author": "Steve Swinsburg",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/steveswinsburg/test-verdict.git"
+  },
+  "homepage": "https://github.com/steveswinsburg/test-verdict#readme",
+  "bugs": {
+    "url": "https://github.com/steveswinsburg/test-verdict/issues"
+  },
   "engines": {
     "node": ">=20"
   },
-  "dependencies": {
+  "devDependencies": {
     "@actions/core": "^1.11.1",
     "@actions/github": "^6.0.1",
-    "fast-glob": "^3.3.3",
-    "fast-xml-parser": "^4.5.0",
-    "picomatch": "^4.0.2",
-    "yaml": "^2.7.0"
-  },
-  "devDependencies": {
     "@types/node": "^22.10.2",
     "@vitest/coverage-v8": "^2.1.8",
     "esbuild": "^0.24.2",
+    "fast-glob": "^3.3.3",
+    "fast-xml-parser": "^4.5.0",
+    "picomatch": "^4.0.2",
     "typescript": "^5.7.2",
-    "vitest": "^2.1.8"
+    "vitest": "^2.1.8",
+    "yaml": "^2.7.0"
   }
 }

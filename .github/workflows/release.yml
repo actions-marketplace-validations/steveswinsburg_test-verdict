@@ -1,0 +1,56 @@
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+  id-token: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          registry-url: 'https://registry.npmjs.org'
+          cache: npm
+
+      - name: Verify release tag matches package.json version
+        run: |
+          TAG_VERSION="${GITHUB_REF_NAME#v}"
+          PKG_VERSION="$(node -p "require('./package.json').version")"
+          if [ "$TAG_VERSION" != "$PKG_VERSION" ]; then
+            echo "Release tag $GITHUB_REF_NAME does not match package.json version $PKG_VERSION" >&2
+            exit 1
+          fi
+
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm test
+      - run: npm run build
+      - name: Verify dist is up to date
+        run: git diff --exit-code dist/
+
+      - name: Publish CLI to npm
+        run: npm publish --provenance --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Update floating major tag
+        run: |
+          if [[ "$GITHUB_REF_NAME" =~ ^v([0-9]+)\.[0-9]+\.[0-9]+$ ]]; then
+            MAJOR="${BASH_REMATCH[1]}"
+            git config user.name "github-actions[bot]"
+            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+            git tag -fa "v${MAJOR}" -m "Update v${MAJOR} tag to ${GITHUB_REF_NAME}"
+            git push origin "refs/tags/v${MAJOR}" --force
+          else
+            echo "Skipping floating major tag update for non-stable tag $GITHUB_REF_NAME"
+          fi
