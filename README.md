@@ -2,7 +2,9 @@
 
 Universal test & code coverage PR decorator and merge gate for GitHub Actions and local CI.
 
-`test-verdict` auto-detects and aggregates coverage reports across languages, normalises paths to your repository, evaluates overall and PR diff thresholds, updates a single sticky PR comment, and writes a full GitHub Job Step Summary.
+`test-verdict` auto-detects and aggregates coverage reports across many languages, evaluates test coverage thresholds, and comments on your PR.
+
+[![CI](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml/badge.svg)](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml)
 
 ## Supported Formats (v1)
 
@@ -14,8 +16,6 @@ Universal test & code coverage PR decorator and merge gate for GitHub Actions an
 | **Istanbul / Jest JSON** | JS/TS (`coverage-final.json`, `coverage-summary.json`) |
 | **Go `coverprofile`** | Go (`go test -coverprofile=coverage.out`) |
 | **OpenCover XML** | .NET (`OpenCover`, `AltCover`) |
-
-*(v2 roadmap: test execution results via JUnit XML & .NET TRX, plus base-branch delta tracking.)*
 
 ## Quickstart (GitHub Actions)
 
