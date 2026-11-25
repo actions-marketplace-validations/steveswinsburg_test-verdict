@@ -3,8 +3,8 @@ description: 'Universal test & code coverage PR decorator and merge gate for eve
 author: 'Steve Swinsburg'
 
 branding:
-  icon: 'check-circle'
-  color: 'green'
+  icon: 'shield'
+  color: 'blue'
 
 inputs:
   files:

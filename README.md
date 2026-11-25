@@ -6,7 +6,7 @@
 
 Universal test & code coverage PR decorator and merge gate for GitHub Actions and local CI.
 
-`test-verdict` auto-detects and aggregates coverage reports across many languages, evaluates test coverage thresholds, and comments on your PR.
+`test-verdict` auto-detects and aggregates coverage reports across many languages, evaluates test coverage thresholds, comments on your PR and can enforce merge gates, blocking PRs until coverage thresholds are met.
 
 [![CI](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml/badge.svg)](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/test-verdict.svg)](https://www.npmjs.com/package/test-verdict)
