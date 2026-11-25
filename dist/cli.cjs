@@ -20643,7 +20643,7 @@ function buildSummaryJson(result) {
 }
 
 // src/cli/main.ts
-var VERSION = true ? "0.3.1" : "0.0.0-dev";
+var VERSION = true ? "0.4.0" : "0.0.0-dev";
 function printHelp() {
   console.log(`test-verdict v${VERSION} \u2014 Universal coverage report aggregator and PR gate
 
