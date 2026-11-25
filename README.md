@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="test-verdict.png" alt="Test Verdict" width="420">
+</p>
+
 # Test Verdict
 
 Universal test & code coverage PR decorator and merge gate for GitHub Actions and local CI.
@@ -5,8 +9,27 @@ Universal test & code coverage PR decorator and merge gate for GitHub Actions an
 `test-verdict` auto-detects and aggregates coverage reports across many languages, evaluates test coverage thresholds, and comments on your PR.
 
 [![CI](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml/badge.svg)](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/test-verdict.svg)](https://www.npmjs.com/package/test-verdict)
+[![license](https://img.shields.io/github/license/steveswinsburg/test-verdict.svg)](LICENSE)
 
-## Supported Formats (v1)
+## Features
+
+- **Format-agnostic auto-detection** - parses and merges multiple reports across languages in a single pass.
+- **Overall & PR diff coverage** - gates both total coverage and changed lines in the pull request.
+- **Sticky PR comment & Job Step Summary** - updates a single PR comment in place, with a full breakdown in the workflow summary.
+- **Branch-protection ready** - fails the check on threshold breaches when `enforce: true` so PRs cannot merge until passing.
+- **Fork-PR safe** - gracefully degrades to Job Step Summary + exit-code gating if Github token permissions don't allow commenting.
+- **Zero-dependency local CLI** - run locally or in any CI provider via `npx test-verdict`.
+
+### Example PR Comment
+
+> ## Test Verdict - ✅ Passed
+>
+> | Suite | Lines | Branches | Functions | PR Diff | Status |
+> | :--- | ---: | ---: | ---: | ---: | :---: |
+> | Overall | 91.1% (1552/1703) | 70.4% (386/548) | 96.2% (75/78) | 94.4% (34/36) | ✅ Pass |
+
+## Supported Formats
 
 | Format | Ecosystems / Tools |
 | :--- | :--- |
@@ -47,7 +70,12 @@ jobs:
 ```
 
 ### Enforcing Merge Gates
+
 Set `enforce: true` (the default) and mark the workflow job as a **required status check** in your repository's Branch Protection / Rulesets. Any threshold violation fails the check and blocks the PR merge.
+
+### Fork PR Safety
+
+On `pull_request` events from forks, GitHub supplies a read-only `GITHUB_TOKEN`. If `test-verdict` can't post comments with this token, it will still writes the Job Step Summary, and still enforce the thresholds.
 
 ## Monorepo Coverage Groups
 
@@ -79,17 +107,17 @@ groups:
 
 | Input | Default | Description |
 | :--- | :--- | :--- |
-| `files` | — | Newline or comma-separated coverage report globs |
+| `files` | - | Newline or comma-separated coverage report globs |
 | `format` | `auto` | `auto` \| `lcov` \| `cobertura` \| `jacoco` \| `istanbul` \| `gocover` \| `opencover` |
 | `config` | `.test-verdict.yml` | Path to optional YAML config file |
-| `exclude` | — | Newline or comma-separated source path exclusion globs |
+| `exclude` | - | Newline or comma-separated source path exclusion globs |
 | `report-id` | `default` | Identifier for sticky PR comments across multiple steps |
 | `title` | `Test Verdict` | Heading for PR comments and step summaries |
-| `min-line` | — | Minimum overall line coverage % (0–100) |
-| `min-branch` | — | Minimum overall branch coverage % (0–100) |
-| `min-function` | — | Minimum overall function coverage % (0–100) |
-| `min-diff-line` | — | Minimum PR changed-lines coverage % (0–100) |
-| `min-diff-branch` | — | Minimum PR changed-lines branch coverage % (0–100) |
+| `min-line` | - | Minimum overall line coverage % (0–100) |
+| `min-branch` | - | Minimum overall branch coverage % (0–100) |
+| `min-function` | - | Minimum overall function coverage % (0–100) |
+| `min-diff-line` | - | Minimum PR changed-lines coverage % (0–100) |
+| `min-diff-branch` | - | Minimum PR changed-lines branch coverage % (0–100) |
 | `enforce` | `true` | Fail the check when thresholds are breached |
 | `fail-on-empty` | `true` | Fail if no coverage files match `files` |
 | `comment` | `true` | Post or update sticky PR comment |
@@ -108,14 +136,58 @@ groups:
 | `passed` | `"true"` or `"false"` |
 | `summary-json` | JSON payload summarizing all groups, metrics, violations, and warnings |
 
-## Local CLI Usage
+## Local CLI
+
+Global install:
 
 ```bash
+npm install -g test-verdict
+```
+
+Or run without installing via `npx`:
+
+```bash
+npx test-verdict --files coverage/lcov.info --min-line 80
 npx test-verdict --files coverage/lcov.info --min-line 80 --diff-base origin/main --markdown
 ```
 
-## Contributing a New Format Parser
+| Option | Description |
+| :--- | :--- |
+| `-f, --files <glob>` | Coverage report glob pattern (repeatable) |
+| `--format <fmt>` | `auto` \| `lcov` \| `cobertura` \| `jacoco` \| `istanbul` \| `gocover` \| `opencover` |
+| `-c, --config <path>` | Path to `.test-verdict.yml` |
+| `-e, --exclude <glob>` | Source file glob to exclude (repeatable) |
+| `--report-id <id>` | Sticky comment report ID (default: `"default"`) |
+| `--title <text>` | Report title (default: `"Test Verdict"`) |
+| `--min-line <pct>` | Minimum overall line coverage % (0–100) |
+| `--min-branch <pct>` | Minimum overall branch coverage % (0–100) |
+| `--min-function <pct>` | Minimum overall function coverage % (0–100) |
+| `--min-diff-line <pct>` | Minimum PR/git diff line coverage % (0–100) |
+| `--min-diff-branch <pct>` | Minimum PR/git diff branch coverage % (0–100) |
+| `--diff-base <ref>` | Git ref to diff against (e.g. `origin/main`, `HEAD~1`) |
+| `--working-dir <dir>` | Working directory (default: `.`) |
+| `--enforce` / `--no-enforce` | Exit non-zero on threshold breach (default: `true`) |
+| `--fail-on-empty` / `--no-fail-on-empty` | Fail when no reports match (default: `true`) |
+| `--markdown` | Print Markdown report to stdout |
+| `--json` | Print JSON summary to stdout |
+| `-h, --help` | Show help message |
+| `-v, --version` | Show version |
+
+## Development
+
+```bash
+npm ci
+npm run typecheck
+npm run test:coverage
+npm run build
+```
+
+### Contributing a New Format Parser
 
 1. Implement `CoverageParser` in `src/parsers/<format>.ts` (`id`, `canParse(filePath, snippet)`, `parse(content, sourceFile)`).
 2. Register the parser in `createDefaultParserRegistry()` inside `src/parsers/registry.ts`.
 3. Add realistic fixture files under `tests/fixtures/` and unit tests under `tests/parsers/`.
+
+---
+
+Made with ❤️ for better code everywhere.
