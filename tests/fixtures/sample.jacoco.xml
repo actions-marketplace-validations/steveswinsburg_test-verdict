@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<report name="api">
+  <package name="com/acme/service">
+    <class name="com/acme/service/OrderService" sourcefilename="OrderService.java">
+      <method name="placeOrder" desc="()V" line="10">
+        <counter type="METHOD" missed="0" covered="1"/>
+      </method>
+      <method name="cancelOrder" desc="()V" line="20">
+        <counter type="METHOD" missed="1" covered="0"/>
+      </method>
+    </class>
+    <sourcefile name="OrderService.java">
+      <line nr="10" mi="0" ci="4" mb="0" cb="0"/>
+      <line nr="11" mi="0" ci="3" mb="1" cb="1"/>
+      <line nr="20" mi="5" ci="0" mb="0" cb="0"/>
+      <counter type="LINE" missed="1" covered="2"/>
+      <counter type="BRANCH" missed="1" covered="1"/>
+      <counter type="METHOD" missed="1" covered="1"/>
+    </sourcefile>
+  </package>
+</report>

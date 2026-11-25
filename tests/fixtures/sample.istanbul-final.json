@@ -1,0 +1,20 @@
+{
+  "/home/runner/work/app/app/src/index.ts": {
+    "path": "/home/runner/work/app/app/src/index.ts",
+    "statementMap": {
+      "0": { "start": { "line": 1, "column": 0 }, "end": { "line": 1, "column": 20 } },
+      "1": { "start": { "line": 2, "column": 0 }, "end": { "line": 2, "column": 20 } },
+      "2": { "start": { "line": 4, "column": 0 }, "end": { "line": 4, "column": 20 } }
+    },
+    "fnMap": {
+      "0": { "name": "main", "line": 1 },
+      "1": { "name": "unused", "line": 4 }
+    },
+    "branchMap": {
+      "0": { "line": 2, "type": "if" }
+    },
+    "s": { "0": 2, "1": 2, "2": 0 },
+    "f": { "0": 2, "1": 0 },
+    "b": { "0": [2, 0] }
+  }
+}

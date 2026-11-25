@@ -1,0 +1,88 @@
+name: 'Test Verdict'
+description: 'Universal test & code coverage PR decorator and merge gate for every test report format.'
+author: 'Steve Swinsburg'
+
+branding:
+  icon: 'check-circle'
+  color: 'green'
+
+inputs:
+  files:
+    description: 'Newline or comma-separated glob patterns for coverage report files.'
+    required: false
+  format:
+    description: 'Report format override: auto | lcov | cobertura | jacoco | istanbul | gocover | opencover.'
+    required: false
+    default: 'auto'
+  config:
+    description: 'Optional path to a .test-verdict.yml config file.'
+    required: false
+    default: '.test-verdict.yml'
+  exclude:
+    description: 'Newline or comma-separated glob patterns of source paths to exclude.'
+    required: false
+  report-id:
+    description: 'Unique identifier for sticky PR comments when running multiple steps.'
+    required: false
+    default: 'default'
+  title:
+    description: 'Title displayed at the top of PR comments and step summaries.'
+    required: false
+    default: 'Test Verdict'
+  min-line:
+    description: 'Minimum overall line coverage percentage (0-100).'
+    required: false
+  min-branch:
+    description: 'Minimum overall branch coverage percentage (0-100).'
+    required: false
+  min-function:
+    description: 'Minimum overall function coverage percentage (0-100).'
+    required: false
+  min-diff-line:
+    description: 'Minimum PR diff (changed lines) coverage percentage (0-100).'
+    required: false
+  min-diff-branch:
+    description: 'Minimum PR diff branch coverage percentage (0-100).'
+    required: false
+  enforce:
+    description: 'Fail the check when coverage thresholds are breached.'
+    required: false
+    default: 'true'
+  fail-on-empty:
+    description: 'Fail when no coverage report files match the configured globs.'
+    required: false
+    default: 'true'
+  comment:
+    description: 'Post or update a sticky PR comment with coverage results.'
+    required: false
+    default: 'true'
+  step-summary:
+    description: 'Write the coverage verdict to the GitHub Job Step Summary.'
+    required: false
+    default: 'true'
+  github-token:
+    description: 'GitHub token for reading PR diff and posting comments.'
+    required: false
+    default: ${{ github.token }}
+  working-directory:
+    description: 'Working directory containing the repository and coverage reports.'
+    required: false
+    default: '.'
+
+outputs:
+  line-coverage:
+    description: 'Overall line coverage percentage, or empty if unavailable.'
+  branch-coverage:
+    description: 'Overall branch coverage percentage, or empty if unavailable.'
+  function-coverage:
+    description: 'Overall function coverage percentage, or empty if unavailable.'
+  diff-coverage:
+    description: 'PR diff line coverage percentage, or empty if unavailable.'
+  passed:
+    description: 'Whether all configured thresholds passed ("true" or "false").'
+  summary-json:
+    description: 'JSON summary of the evaluation result.'
+
+runs:
+  using: 'node24'
+  main: 'dist/index.cjs'

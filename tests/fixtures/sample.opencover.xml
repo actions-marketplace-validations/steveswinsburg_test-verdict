@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="utf-8"?>
+<CoverageSession>
+  <Modules>
+    <Module>
+      <Files>
+        <File uid="1" fullPath="C:\repo\src\Calc.cs" />
+      </Files>
+      <Classes>
+        <Class>
+          <Methods>
+            <Method visited="true">
+              <Name>Calc::Add</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="3" sl="10" fileid="1" />
+                <SequencePoint vc="3" sl="11" fileid="1" />
+              </SequencePoints>
+              <BranchPoints>
+                <BranchPoint vc="3" sl="10" fileid="1" />
+                <BranchPoint vc="0" sl="10" fileid="1" />
+              </BranchPoints>
+            </Method>
+            <Method visited="false">
+              <Name>Calc::Sub</Name>
+              <FileRef uid="1" />
+              <SequencePoints>
+                <SequencePoint vc="0" sl="15" fileid="1" />
+              </SequencePoints>
+            </Method>
+          </Methods>
+        </Class>
+      </Classes>
+    </Module>
+  </Modules>
+</CoverageSession>
