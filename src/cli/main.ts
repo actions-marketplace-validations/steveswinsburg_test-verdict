@@ -1,5 +1,6 @@
 import { execFileSync } from 'node:child_process';
 import { parseArgs } from 'node:util';
+import pkg from '../../package.json' with { type: 'json' };
 import { parseUnifiedDiff } from '../core/diff.js';
 import { runVerdict } from '../core/runner.js';
 import { buildSummaryJson, renderVerdictMarkdown } from '../reporters/markdown.js';
@@ -7,7 +8,7 @@ import type { FormatId } from '../types/coverage.js';
 import type { ChangedFileLines } from '../types/diff.js';
 import type { VerdictResult } from '../types/evaluation.js';
 
-const VERSION = '0.1.0';
+const VERSION = pkg.version;
 
 function printHelp(): void {
   console.log(`test-verdict v${VERSION} — Universal coverage report aggregator and PR gate
