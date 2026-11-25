@@ -40,6 +40,8 @@ Universal test & code coverage PR decorator and merge gate - available as both a
 | **Go `coverprofile`** | Go (`go test -coverprofile=coverage.out`) |
 | **OpenCover XML** | .NET (`OpenCover`, `AltCover`) |
 
+See [EXAMPLES.md](EXAMPLES.md) for full recipes covering every report format, parameter combination, and standalone CLI usage.
+
 ## Quickstart (GitHub Actions)
 
 ```yaml
