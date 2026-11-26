@@ -11,7 +11,7 @@ declare const __TEST_VERDICT_VERSION__: string | undefined;
 const VERSION = typeof __TEST_VERDICT_VERSION__ !== 'undefined' ? __TEST_VERDICT_VERSION__ : '0.0.0-dev';
 
 function printHelp(): void {
-  console.log(`test-verdict v${VERSION} — Universal coverage report aggregator and PR gate
+  console.log(`test-verdict v${VERSION} - Universal coverage report aggregator and PR gate
 
 Usage:
   test-verdict [options]

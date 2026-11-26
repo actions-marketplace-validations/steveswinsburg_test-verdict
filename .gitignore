@@ -4,3 +4,5 @@ coverage/
 *.log
 
 generated_images/
+azure-pipelines/task/index.cjs
+*.vsix
