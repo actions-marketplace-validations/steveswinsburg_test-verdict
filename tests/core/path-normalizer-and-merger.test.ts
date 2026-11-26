@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { mergeReports } from '../../src/core/merger.js';
 import { formatLineRanges, summarizeFiles } from '../../src/core/metrics.js';
-import { createPathNormalizer, normalizePathSeparators } from '../../src/core/path-normalizer.js';
+import { createPathNormalizer, normalizePathSeparators, stripTrailingSlashes, trimSlashes } from '../../src/core/path-normalizer.js';
 import type { NormalizedCoverageReport } from '../../src/types/coverage.js';
 
 describe('path normalizer, merger, and metrics', () => {
@@ -83,5 +83,17 @@ describe('path normalizer, merger, and metrics', () => {
   it('formats consecutive line numbers into compact ranges', () => {
     expect(formatLineRanges([])).toBe('—');
     expect(formatLineRanges([12, 3, 4, 5, 9, 11, 5])).toBe('3-5, 9, 11-12');
+  });
+
+  it('strips trailing and surrounding slashes in linear time without regex backtracking', () => {
+    expect(stripTrailingSlashes('')).toBe('');
+    expect(stripTrailingSlashes('///')).toBe('');
+    expect(stripTrailingSlashes('https://dev.azure.com/org///')).toBe('https://dev.azure.com/org');
+    expect(stripTrailingSlashes(`https://dev.azure.com/org${'/'.repeat(50_000)}`)).toBe('https://dev.azure.com/org');
+
+    expect(trimSlashes('')).toBe('');
+    expect(trimSlashes('///')).toBe('');
+    expect(trimSlashes('//com/acme/pkg//')).toBe('com/acme/pkg');
+    expect(trimSlashes(`${'/'.repeat(50_000)}a${'/'.repeat(50_000)}`)).toBe('a');
   });
 });
