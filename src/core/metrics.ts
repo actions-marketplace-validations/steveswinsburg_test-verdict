@@ -92,7 +92,7 @@ export function summarizeFiles(files: Iterable<FileCoverage>): CoverageSummary {
 
 /** Collapse sorted line numbers into compact ranges (e.g. "3-5, 9, 11-12"). */
 export function formatLineRanges(lines: number[]): string {
-  if (lines.length === 0) return '—';
+  if (lines.length === 0) return '-';
   const sorted = Array.from(new Set(lines)).sort((a, b) => a - b);
   const ranges: string[] = [];
 

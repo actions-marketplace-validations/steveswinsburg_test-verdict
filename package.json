@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "package:azure": "npm run build && npx --yes tfx-cli extension create --root azure-pipelines --manifest-globs vss-extension.json --output-path dist"
   },
   "keywords": [
     "github-actions",

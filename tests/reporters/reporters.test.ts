@@ -87,10 +87,40 @@ describe('markdown and GitHub reporters', () => {
     const md = renderVerdictMarkdown(result);
 
     expect(md).toContain(buildStickyMarker('unit-suite'));
+    expect(md).toContain('## Test Verdict - ❌ Failed');
     expect(md).toContain('❌ Failed');
     expect(md).toContain('`src/changed.ts`');
     expect(md).toContain('`src/unmeasured.ts` | 2 | 0.0% (0/2) (not in report) | 1-2 |');
     expect(md).toContain('Overall: line coverage 50% < 80%');
+    expect(md).not.toContain('—');
+
+    const minimalResult: VerdictResult = {
+      ...result,
+      passed: true,
+      violations: [],
+      overall: {
+        ...result.overall,
+        passed: true,
+        violations: [],
+        summary: { lines: null, branches: null, functions: null },
+        diffCoverage: null,
+        files: new Map([
+          [
+            'src/empty.ts',
+            {
+              path: 'src/empty.ts',
+              lines: new Map(),
+              branches: null,
+              functions: null,
+            },
+          ],
+        ]),
+      },
+    };
+    const minimalMd = renderVerdictMarkdown(minimalResult);
+    expect(minimalMd).toContain('| Overall | - | - | - | - | ✅ Pass |');
+    expect(minimalMd).toContain('| `src/empty.ts` | - | - | - |');
+    expect(minimalMd).not.toContain('—');
 
     const json = buildSummaryJson(result);
     expect(json.passed).toBe(false);

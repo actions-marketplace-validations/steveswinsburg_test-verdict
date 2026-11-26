@@ -1,6 +1,6 @@
 # Test Verdict Examples
 
-Copy-pasteable workflows and CLI commands covering every supported coverage report format, parameter combination, and monorepo configuration.
+Copy-pasteable GitHub Actions workflows, Azure Pipelines YAML, and standalone CLI commands covering every supported coverage report format, parameter combination, and monorepo configuration.
 
 ## Contents
 
@@ -19,6 +19,12 @@ Copy-pasteable workflows and CLI commands covering every supported coverage repo
   - [11. Polyglot Monorepo with `.test-verdict.yml` and `working-directory`](#11-polyglot-monorepo-with-test-verdictyml-and-working-directory)
   - [12. Using Action Outputs in Downstream Steps](#12-using-action-outputs-in-downstream-steps)
   - [13. Locked-Down Org Gate (`config: none`, `include`, `persist-credentials: false`)](#13-locked-down-org-gate-config-none-include-persist-credentials-false)
+- [Azure Pipelines Recipes](#azure-pipelines-recipes)
+  - [14. Azure Pipelines - LCOV (TypeScript / Vitest)](#14-azure-pipelines---lcov-typescript--vitest)
+  - [15. Azure Pipelines - .NET (Cobertura / OpenCover) & Java (JaCoCo)](#15-azure-pipelines---net-cobertura--opencover--java-jacoco)
+  - [16. Azure Pipelines - Multiple Suites, Warn-Only Rollout, and Summary Only](#16-azure-pipelines---multiple-suites-warn-only-rollout-and-summary-only)
+  - [17. Azure Pipelines - Monorepo with `.test-verdict.yml` and `workingDirectory`](#17-azure-pipelines---monorepo-with-test-verdictyml-and-workingdirectory)
+  - [18. Azure Pipelines - Downstream Outputs & Custom Token](#18-azure-pipelines---downstream-outputs--custom-token)
 - [Standalone CLI Recipes](#standalone-cli-recipes)
 
 ---
@@ -459,6 +465,141 @@ Prevent PR branches from altering coverage rules via `.test-verdict.yml`, ensure
             **/*.generated.ts
           min-line: 80
           min-diff-line: 90
+```
+
+---
+
+## Azure Pipelines Recipes
+
+See [AZURE_PIPELINES.md](AZURE_PIPELINES.md) for Build Service permissions, Branch Policy setup, and `.vsix` packaging details.
+
+### 14. Azure Pipelines - LCOV (TypeScript / Vitest)
+
+Full `azure-pipelines.yml` using `fetchDepth: 0` so PR diff coverage compares cleanly against `System.PullRequest.TargetBranch`.
+
+```yaml
+trigger:
+  - main
+
+pr:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - task: NodeTool@0
+    inputs:
+      versionSpec: '20.x'
+
+  - script: npm ci && npx vitest run --coverage --coverage.reporter=lcov
+    displayName: Run tests with coverage
+
+  - task: TestVerdict@0
+    inputs:
+      files: coverage/lcov.info
+      exclude: |
+        **/*.generated.ts
+        **/__tests__/**
+      minLine: '85'
+      minBranch: '75'
+      minFunction: '85'
+      minDiffLine: '90'
+```
+
+### 15. Azure Pipelines - .NET (Cobertura / OpenCover) & Java (JaCoCo)
+
+For .NET (`coverlet` Cobertura XML):
+
+```yaml
+  - script: dotnet test --collect:"XPlat Code Coverage" --results-directory TestResults
+    displayName: Run .NET tests
+
+  - task: TestVerdict@0
+    inputs:
+      files: TestResults/**/coverage.cobertura.xml
+      format: cobertura
+      minLine: '80'
+      minDiffLine: '90'
+      minDiffBranch: '80'
+```
+
+For Java / Kotlin (Gradle JaCoCo):
+
+```yaml
+  - script: ./gradlew test jacocoTestReport
+    displayName: Run Gradle tests
+
+  - task: TestVerdict@0
+    inputs:
+      files: '**/build/reports/jacoco/test/jacocoTestReport.xml'
+      format: jacoco
+      exclude: |
+        **/generated/**
+        **/*Application.java
+      minLine: '85'
+      minBranch: '75'
+```
+
+### 16. Azure Pipelines - Multiple Suites, Warn-Only Rollout, and Summary Only
+
+Use distinct `reportId` and `title` values for separate sticky PR comment threads, `enforce: false` for non-blocking rollout, or `comment: false` with `summary: true` to publish only to the Build Summary tab.
+
+```yaml
+  - task: TestVerdict@0
+    inputs:
+      files: coverage/unit/lcov.info
+      reportId: unit-tests
+      title: Unit Test Coverage
+      minLine: '85'
+
+  - task: TestVerdict@0
+    inputs:
+      files: coverage/e2e/lcov.info
+      reportId: e2e-tests
+      title: E2E Coverage
+      minLine: '60'
+      enforce: false
+      failOnEmpty: false
+      comment: false
+      summary: true
+```
+
+### 17. Azure Pipelines - Monorepo with `.test-verdict.yml` and `workingDirectory`
+
+Reuse the same `.test-verdict.yml` structure shown in [recipe 11](#11-polyglot-monorepo-with-test-verdictyml-and-working-directory) and point `workingDirectory` at your packages folder:
+
+```yaml
+  - task: TestVerdict@0
+    inputs:
+      workingDirectory: packages
+      config: .test-verdict.yml
+```
+
+### 18. Azure Pipelines - Downstream Outputs & Custom Token
+
+Name the task step (`name: testVerdict`) to consume its output variables in downstream steps (`condition: succeededOrFailed()`), and optionally pass a custom PAT via `token` to post PR comments under a dedicated account instead of the Build Service identity.
+
+```yaml
+  - task: TestVerdict@0
+    name: testVerdict
+    inputs:
+      files: coverage/lcov.info
+      minLine: '80'
+      minDiffLine: '90'
+      token: $(TEST_VERDICT_ADO_PAT)
+
+  - script: |
+      echo "Passed: $(testVerdict.passed)"
+      echo "Line coverage: $(testVerdict.lineCoverage)%"
+      echo "Branch coverage: $(testVerdict.branchCoverage)%"
+      echo "Function coverage: $(testVerdict.functionCoverage)%"
+      echo "Diff coverage: $(testVerdict.diffCoverage)%"
+    condition: succeededOrFailed()
+    displayName: Inspect Test Verdict outputs
 ```
 
 ---
