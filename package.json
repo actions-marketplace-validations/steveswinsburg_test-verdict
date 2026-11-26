@@ -1,6 +1,6 @@
 {
   "name": "test-verdict",
-  "version": "0.5.0",
+  "version": "0.5.1",
   "description": "Universal test & code coverage PR decorator and merge gate supporting JaCoCo, Cobertura, LCOV, Istanbul/Jest, Go, and OpenCover.",
   "type": "module",
   "bin": {
