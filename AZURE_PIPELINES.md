@@ -131,7 +131,7 @@ This builds `azure-pipelines/task/index.cjs` (keeping version numbers in [azure-
 
 ### Publishing to the Visual Studio Marketplace
 
-On every new release pushed to `main`, [.github/workflows/ci.yml](.github/workflows/ci.yml) automatically packages the `.vsix` and attaches it as an asset on the GitHub Release.
+On every new release pushed to `main`, [.github/workflows/release.yml](.github/workflows/release.yml) automatically packages the `.vsix` and attaches it as an asset on the GitHub Release.
 
 To publish or update the extension on the [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage):
 

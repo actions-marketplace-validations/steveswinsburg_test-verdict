@@ -249,13 +249,14 @@ git commit -m "chore: release v$(node -p "require('./package.json').version")"
 git push origin main
 ```
 
-On push to `main`, `.github/workflows/ci.yml` automatically:
+On push to `main`:
 
-1. Runs typecheck, tests, coverage, and `dist/` + Azure extension manifest verification.
-2. Publishes the new version to npmjs via Trusted Publishing (OIDC) if not already published.
-3. Creates the `v<version>` GitHub Release with auto-generated release notes.
-4. Updates the floating major tag (e.g. `v1` for `v1.x.x`) for GitHub Action consumers.
-5. Packages the Azure Pipelines `.vsix` and attaches it to the GitHub Release for manual upload to the Visual Studio Marketplace.
+- `.github/workflows/ci.yml` runs typecheck, tests, coverage, `dist/` + Azure extension manifest verification, and dogfoods Test Verdict (both the GitHub Action and standalone CLI).
+- `.github/workflows/release.yml` automatically:
+  1. Publishes the new version to npmjs via Trusted Publishing (OIDC) if not already published.
+  2. Creates the `v<version>` GitHub Release with auto-generated release notes.
+  3. Updates the floating major tag (e.g. `v1` for `v1.x.x`) for GitHub Action consumers.
+  4. Packages the Azure Pipelines `.vsix` and attaches it to the GitHub Release for manual upload to the Visual Studio Marketplace.
 
 > To list a release on GitHub Actions Marketplace, edit the created GitHub Release and check **Publish this Action to the GitHub Marketplace**.
 
