@@ -1,3 +1,4 @@
+import { trimSlashes } from '../core/path-normalizer.js';
 import type { BranchEntry, FileCoverage, FunctionEntry, NormalizedCoverageReport } from '../types/coverage.js';
 import { type CoverageParser, parseXml, toArray, toInt } from './parser.js';
 
@@ -26,7 +27,7 @@ export const jacocoParser: CoverageParser = {
     };
 
     for (const pkg of collectPackages(report)) {
-      const pkgName = String(pkg['@_name'] ?? '').replace(/\\/g, '/').replace(/^\/+|\/+$/g, '');
+      const pkgName = trimSlashes(String(pkg['@_name'] ?? '').replace(/\\/g, '/'));
 
       // Collect method-level functions grouped by sourcefilename when <class> nodes exist
       const functionsBySource = new Map<string, FunctionEntry[]>();

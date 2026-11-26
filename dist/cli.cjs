@@ -15106,6 +15106,96 @@ var import_node_path3 = __toESM(require("node:path"), 1);
 var import_fast_glob = __toESM(require_out4(), 1);
 var import_picomatch = __toESM(require_picomatch4(), 1);
 
+// src/core/path-normalizer.ts
+var import_node_child_process = require("node:child_process");
+var import_node_path = __toESM(require("node:path"), 1);
+var RUNNER_PREFIX_PATTERNS = [
+  /^\/home\/runner\/work\/[^/]+\/[^/]+\//,
+  /^\/github\/workspace\//,
+  /^\/__w\/[^/]+\/[^/]+\//,
+  /^\/workspace\//,
+  /^\/app\//,
+  /^[a-zA-Z]:\/a\/[^/]+\/[^/]+\//
+];
+function stripTrailingSlashes(value) {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47) {
+    end -= 1;
+  }
+  return end === value.length ? value : value.slice(0, end);
+}
+function trimSlashes(value) {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value.charCodeAt(start) === 47) {
+    start += 1;
+  }
+  while (end > start && value.charCodeAt(end - 1) === 47) {
+    end -= 1;
+  }
+  return start === 0 && end === value.length ? value : value.slice(start, end);
+}
+function normalizePathSeparators(filePath) {
+  return filePath.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/^\.\//, "");
+}
+function stripKnownPrefixes(rawPath, workingDirectory) {
+  let cleaned = normalizePathSeparators(rawPath.trim());
+  if (workingDirectory) {
+    const normWd = stripTrailingSlashes(normalizePathSeparators(import_node_path.default.resolve(workingDirectory)));
+    if (cleaned.startsWith(`${normWd}/`)) {
+      cleaned = cleaned.slice(normWd.length + 1);
+    }
+  }
+  for (const pattern of RUNNER_PREFIX_PATTERNS) {
+    if (pattern.test(cleaned)) {
+      cleaned = cleaned.replace(pattern, "");
+      break;
+    }
+  }
+  return cleaned.replace(/^\.\//, "");
+}
+function getRepoFiles(workingDirectory) {
+  try {
+    const out = (0, import_node_child_process.execFileSync)("git", ["ls-files"], {
+      cwd: workingDirectory,
+      encoding: "utf8",
+      stdio: ["ignore", "pipe", "ignore"]
+    });
+    return out.split(/\r?\n/).map((line) => normalizePathSeparators(line.trim())).filter(Boolean);
+  } catch {
+    return [];
+  }
+}
+function createPathNormalizer(repoFiles, workingDirectory) {
+  const normalizedRepoFiles = repoFiles.map(normalizePathSeparators);
+  const repoSet = new Set(normalizedRepoFiles);
+  return (rawPath) => {
+    const cleaned = stripKnownPrefixes(rawPath, workingDirectory);
+    if (repoSet.has(cleaned)) {
+      return cleaned;
+    }
+    const withoutLeadingSlash = cleaned.replace(/^\/+/, "");
+    if (repoSet.has(withoutLeadingSlash)) {
+      return withoutLeadingSlash;
+    }
+    const suffix = `/${withoutLeadingSlash}`;
+    const suffixMatches = normalizedRepoFiles.filter(
+      (candidate) => candidate === withoutLeadingSlash || candidate.endsWith(suffix)
+    );
+    if (suffixMatches.length === 1) {
+      return suffixMatches[0];
+    }
+    const segments = withoutLeadingSlash.split("/").filter(Boolean);
+    for (let i = 1; i < segments.length; i += 1) {
+      const candidatePath = segments.slice(i).join("/");
+      if (repoSet.has(candidatePath)) {
+        return candidatePath;
+      }
+    }
+    return withoutLeadingSlash;
+  };
+}
+
 // node_modules/fast-xml-parser/src/util.js
 var nameStartChar = ":A-Za-z_\\u00C0-\\u00D6\\u00D8-\\u00F6\\u00F8-\\u02FF\\u0370-\\u037D\\u037F-\\u1FFF\\u200C-\\u200D\\u2070-\\u218F\\u2C00-\\u2FEF\\u3001-\\uD7FF\\uF900-\\uFDCF\\uFDF0-\\uFFFD";
 var nameChar = nameStartChar + "\\-.\\d\\u00B7\\u0300-\\u036F\\u203F-\\u2040";
@@ -19321,7 +19411,7 @@ function joinSourceAndFilename(sources, filename) {
   if (/^([a-zA-Z]:\/|\/)/.test(cleanFile) || sources.length === 0) {
     return cleanFile;
   }
-  const source = sources[0]?.replace(/\\/g, "/").replace(/\/+$/, "") ?? "";
+  const source = stripTrailingSlashes((sources[0] ?? "").replace(/\\/g, "/"));
   if (!source || source === ".") {
     return cleanFile;
   }
@@ -19588,7 +19678,7 @@ var jacocoParser = {
       return [...direct, ...nested];
     };
     for (const pkg of collectPackages(report)) {
-      const pkgName = String(pkg["@_name"] ?? "").replace(/\\/g, "/").replace(/^\/+|\/+$/g, "");
+      const pkgName = trimSlashes(String(pkg["@_name"] ?? "").replace(/\\/g, "/"));
       const functionsBySource = /* @__PURE__ */ new Map();
       const classes = toArray(pkg.class);
       for (const cls of classes) {
@@ -19968,7 +20058,7 @@ function createDefaultParserRegistry() {
 
 // src/core/config-loader.ts
 var import_node_fs = require("node:fs");
-var import_node_path = __toESM(require("node:path"), 1);
+var import_node_path2 = __toESM(require("node:path"), 1);
 var import_yaml = __toESM(require_dist(), 1);
 var VALID_FORMATS = /* @__PURE__ */ new Set(["auto", "lcov", "cobertura", "jacoco", "istanbul", "gocover", "opencover"]);
 function parseFormat(value) {
@@ -20036,7 +20126,7 @@ function parseGroups(raw) {
   });
 }
 function loadConfigFile(workingDirectory, configPath = ".test-verdict.yml", isExplicit = false) {
-  const resolved = import_node_path.default.isAbsolute(configPath) ? configPath : import_node_path.default.resolve(workingDirectory, configPath);
+  const resolved = import_node_path2.default.isAbsolute(configPath) ? configPath : import_node_path2.default.resolve(workingDirectory, configPath);
   if (!(0, import_node_fs.existsSync)(resolved)) {
     if (isExplicit) {
       throw new Error(`Config file not found: ${resolved}`);
@@ -20219,78 +20309,6 @@ function mergeFileMaps(maps) {
     }
   }
   return merged;
-}
-
-// src/core/path-normalizer.ts
-var import_node_child_process = require("node:child_process");
-var import_node_path2 = __toESM(require("node:path"), 1);
-var RUNNER_PREFIX_PATTERNS = [
-  /^\/home\/runner\/work\/[^/]+\/[^/]+\//,
-  /^\/github\/workspace\//,
-  /^\/__w\/[^/]+\/[^/]+\//,
-  /^\/workspace\//,
-  /^\/app\//,
-  /^[a-zA-Z]:\/a\/[^/]+\/[^/]+\//
-];
-function normalizePathSeparators(filePath) {
-  return filePath.replace(/\\/g, "/").replace(/\/+/g, "/").replace(/^\.\//, "");
-}
-function stripKnownPrefixes(rawPath, workingDirectory) {
-  let cleaned = normalizePathSeparators(rawPath.trim());
-  if (workingDirectory) {
-    const normWd = normalizePathSeparators(import_node_path2.default.resolve(workingDirectory)).replace(/\/+$/, "");
-    if (cleaned.startsWith(`${normWd}/`)) {
-      cleaned = cleaned.slice(normWd.length + 1);
-    }
-  }
-  for (const pattern of RUNNER_PREFIX_PATTERNS) {
-    if (pattern.test(cleaned)) {
-      cleaned = cleaned.replace(pattern, "");
-      break;
-    }
-  }
-  return cleaned.replace(/^\.\//, "");
-}
-function getRepoFiles(workingDirectory) {
-  try {
-    const out = (0, import_node_child_process.execFileSync)("git", ["ls-files"], {
-      cwd: workingDirectory,
-      encoding: "utf8",
-      stdio: ["ignore", "pipe", "ignore"]
-    });
-    return out.split(/\r?\n/).map((line) => normalizePathSeparators(line.trim())).filter(Boolean);
-  } catch {
-    return [];
-  }
-}
-function createPathNormalizer(repoFiles, workingDirectory) {
-  const normalizedRepoFiles = repoFiles.map(normalizePathSeparators);
-  const repoSet = new Set(normalizedRepoFiles);
-  return (rawPath) => {
-    const cleaned = stripKnownPrefixes(rawPath, workingDirectory);
-    if (repoSet.has(cleaned)) {
-      return cleaned;
-    }
-    const withoutLeadingSlash = cleaned.replace(/^\/+/, "");
-    if (repoSet.has(withoutLeadingSlash)) {
-      return withoutLeadingSlash;
-    }
-    const suffix = `/${withoutLeadingSlash}`;
-    const suffixMatches = normalizedRepoFiles.filter(
-      (candidate) => candidate === withoutLeadingSlash || candidate.endsWith(suffix)
-    );
-    if (suffixMatches.length === 1) {
-      return suffixMatches[0];
-    }
-    const segments = withoutLeadingSlash.split("/").filter(Boolean);
-    for (let i = 1; i < segments.length; i += 1) {
-      const candidatePath = segments.slice(i).join("/");
-      if (repoSet.has(candidatePath)) {
-        return candidatePath;
-      }
-    }
-    return withoutLeadingSlash;
-  };
 }
 
 // src/core/runner.ts
