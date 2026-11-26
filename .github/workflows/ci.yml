@@ -119,16 +119,3 @@ jobs:
           VERSION: ${{ steps.release.outputs.version }}
           VSIX: ${{ steps.azure-package.outputs.vsix }}
         run: gh release upload "$VERSION" "$VSIX" --clobber
-      - name: Publish Azure DevOps extension to Visual Studio Marketplace
-        if: steps.release.outputs.created == 'true'
-        env:
-          AZURE_MARKETPLACE_PAT: ${{ secrets.AZURE_MARKETPLACE_PAT }}
-          VSIX: ${{ steps.azure-package.outputs.vsix }}
-        run: |
-          if [ -z "$AZURE_MARKETPLACE_PAT" ]; then
-            echo "AZURE_MARKETPLACE_PAT is not set, skipping Visual Studio Marketplace publish"
-            exit 0
-          fi
-          npx --yes tfx-cli extension publish \
-            --vsix "$VSIX" \
-            --token "$AZURE_MARKETPLACE_PAT"

@@ -129,17 +129,13 @@ npm run package:azure
 
 This builds `azure-pipelines/task/index.cjs` (keeping version numbers in [azure-pipelines/vss-extension.json](azure-pipelines/vss-extension.json) and [azure-pipelines/task/task.json](azure-pipelines/task/task.json) synced with `package.json`) and creates `dist/steveswinsburg.test-verdict-<version>.vsix`.
 
-To publish or share via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage), create an **organization-scoped PAT** (tied to a single Azure DevOps organization with **Marketplace -> Manage** scope, since global "All accessible organizations" PATs are retired in January 2027) and run:
+### Publishing to the Visual Studio Marketplace
 
-```bash
-# Publish to the Marketplace using an organization-scoped PAT with Marketplace (Manage) scope
-npx tfx-cli extension publish \
-  --vsix dist/steveswinsburg.test-verdict-$(node -p "require('./package.json').version").vsix \
-  --token "$AZURE_MARKETPLACE_PAT"
-```
+On every new release pushed to `main`, [.github/workflows/ci.yml](.github/workflows/ci.yml) automatically packages the `.vsix` and attaches it as an asset on the GitHub Release.
 
-You can also upload the `.vsix` directly in Visual Studio Marketplace as a private extension and share it with specific Azure DevOps organizations before making it public.
+To publish or update the extension on the [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage):
 
-### Automated Publishing via GitHub Actions
+1. Download `steveswinsburg.test-verdict-<version>.vsix` from the GitHub Release (or build it locally with `npm run package:azure`).
+2. Open your publisher page on the [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage) and click **+ New extension -> Azure DevOps** for the initial release, or **... -> Update** for subsequent versions, then upload the `.vsix`.
 
-On every new release pushed to `main`, [.github/workflows/ci.yml](.github/workflows/ci.yml) automatically packages the `.vsix`, attaches it as an asset on the GitHub Release, and publishes it to the Visual Studio Marketplace using the `AZURE_MARKETPLACE_PAT` repository secret.
+You can also upload it as a private extension first and share it with specific Azure DevOps organizations before making it public.

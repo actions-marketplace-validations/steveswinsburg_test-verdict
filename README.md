@@ -255,7 +255,7 @@ On push to `main`, `.github/workflows/ci.yml` automatically:
 2. Publishes the new version to npmjs via Trusted Publishing (OIDC) if not already published.
 3. Creates the `v<version>` GitHub Release with auto-generated release notes.
 4. Updates the floating major tag (e.g. `v1` for `v1.x.x`) for GitHub Action consumers.
-5. Packages the Azure Pipelines `.vsix`, attaches it to the GitHub Release, and publishes it to the Visual Studio Marketplace when `AZURE_MARKETPLACE_PAT` is set.
+5. Packages the Azure Pipelines `.vsix` and attaches it to the GitHub Release for manual upload to the Visual Studio Marketplace.
 
 > To list a release on GitHub Actions Marketplace, edit the created GitHub Release and check **Publish this Action to the GitHub Marketplace**.
 
