@@ -7,7 +7,7 @@ import type { GroupConfig, RunOptions, ThresholdConfig } from '../types/config.j
 import type { FileCoverage, FormatId, NormalizedCoverageReport } from '../types/coverage.js';
 import type { ChangedFileLines } from '../types/diff.js';
 import type { EvaluationWarning, GroupVerdict, VerdictResult } from '../types/evaluation.js';
-import { loadConfigFile } from './config-loader.js';
+import { isConfigDisabled, loadConfigFile } from './config-loader.js';
 import { computeDiffCoverage } from './diff.js';
 import { evaluateGroup } from './evaluator.js';
 import { mergeFileMaps, mergeReports } from './merger.js';
@@ -23,12 +23,36 @@ function mergeThresholds(base?: ThresholdConfig, override?: ThresholdConfig): Th
   };
 }
 
-function filterExcludedFiles(files: Map<string, FileCoverage>, excludePatterns: string[]): Map<string, FileCoverage> {
-  if (excludePatterns.length === 0) return files;
-  const isExcluded = picomatch(excludePatterns, { dot: true });
+function enforceThresholdFloor(groupThresholds: ThresholdConfig, callerFloor?: ThresholdConfig): ThresholdConfig {
+  if (!callerFloor) return groupThresholds;
+  const maxDefined = (a?: number, b?: number): number | undefined => {
+    if (b === undefined) return a;
+    return a === undefined ? b : Math.max(a, b);
+  };
+  return {
+    minLine: maxDefined(groupThresholds.minLine, callerFloor.minLine),
+    minBranch: maxDefined(groupThresholds.minBranch, callerFloor.minBranch),
+    minFunction: maxDefined(groupThresholds.minFunction, callerFloor.minFunction),
+    minDiffLine: maxDefined(groupThresholds.minDiffLine, callerFloor.minDiffLine),
+    minDiffBranch: maxDefined(groupThresholds.minDiffBranch, callerFloor.minDiffBranch),
+  };
+}
+
+function hasDiffThreshold(t?: ThresholdConfig): boolean {
+  return t?.minDiffLine !== undefined || t?.minDiffBranch !== undefined;
+}
+
+function filterFiles(
+  files: Map<string, FileCoverage>,
+  includePatterns: string[],
+  excludePatterns: string[],
+): Map<string, FileCoverage> {
+  if (includePatterns.length === 0 && excludePatterns.length === 0) return files;
+  const isIncluded = includePatterns.length > 0 ? picomatch(includePatterns, { dot: true }) : null;
+  const isExcluded = excludePatterns.length > 0 ? picomatch(excludePatterns, { dot: true }) : null;
   const filtered = new Map<string, FileCoverage>();
   for (const [filePath, fileCov] of files.entries()) {
-    if (!isExcluded(filePath)) {
+    if ((!isIncluded || isIncluded(filePath)) && (!isExcluded || !isExcluded(filePath))) {
       filtered.set(filePath, fileCov);
     }
   }
@@ -89,14 +113,19 @@ async function processGroup(
   for (const relReportPath of matchedFiles) {
     const absPath = path.resolve(workingDir, relReportPath);
     const content = readFileSync(absPath, 'utf8');
+    if (content.trim().length === 0) continue;
     const report = registry.parse(content, relReportPath, group.format ?? 'auto');
     reports.push(report);
     formatSet.add(report.format);
   }
 
   const merged = mergeReports(reports, normalizePath);
-  const filteredFiles = filterExcludedFiles(merged, group.exclude ?? []);
-  const diffCoverage = changedLines ? computeDiffCoverage(filteredFiles, changedLines) : null;
+  const includePatterns = group.include ?? [];
+  const excludePatterns = group.exclude ?? [];
+  const filteredFiles = filterFiles(merged, includePatterns, excludePatterns);
+  const diffCoverage = changedLines
+    ? computeDiffCoverage(filteredFiles, changedLines, { include: includePatterns, exclude: excludePatterns })
+    : null;
 
   const verdict = evaluateGroup({
     name: group.name,
@@ -106,6 +135,32 @@ async function processGroup(
     diffCoverage,
     thresholds: group.thresholds ?? {},
   });
+
+  if (matchedFiles.length > 0) {
+    let emptyCoverageMsg: string | undefined;
+    if (merged.size === 0) {
+      emptyCoverageMsg = `Coverage report(s) [${matchedFiles.join(', ')}] for "${group.name}" contained 0 measured source files.`;
+    } else if (filteredFiles.size === 0) {
+      emptyCoverageMsg = `All ${merged.size} source file(s) in coverage report(s) [${matchedFiles.join(', ')}] for "${group.name}" were filtered out by include/exclude patterns.`;
+    } else if (
+      verdict.summary.lines === null &&
+      verdict.summary.branches === null &&
+      verdict.summary.functions === null
+    ) {
+      emptyCoverageMsg = `Coverage report(s) [${matchedFiles.join(', ')}] for "${group.name}" contained 0 coverable lines or metrics across ${filteredFiles.size} file(s).`;
+    }
+
+    if (emptyCoverageMsg) {
+      if (failOnEmpty && enforce) {
+        throw new Error(emptyCoverageMsg);
+      }
+      warnings.push({
+        group: group.name,
+        code: 'EMPTY_REPORTS',
+        message: emptyCoverageMsg,
+      });
+    }
+  }
 
   verdict.warnings = [...warnings, ...verdict.warnings];
   return verdict;
@@ -117,30 +172,46 @@ export async function runVerdict(
   registry: ParserRegistry = createDefaultParserRegistry(),
 ): Promise<VerdictResult> {
   const workingDir = path.resolve(options.workingDirectory || '.');
-  const isExplicitConfig = options.configPath !== undefined && options.configPath !== '.test-verdict.yml';
-  const fileConfig = loadConfigFile(workingDir, options.configPath ?? '.test-verdict.yml', isExplicitConfig);
+  const configDisabled = isConfigDisabled(options.configPath);
+  const isExplicitConfig = !configDisabled && options.configPath !== undefined && options.configPath !== '.test-verdict.yml';
+  const fileConfig = configDisabled
+    ? {}
+    : loadConfigFile(workingDir, options.configPath ?? '.test-verdict.yml', isExplicitConfig);
 
   const title = options.title ?? fileConfig.title ?? 'Test Verdict';
   const reportId = options.reportId ?? fileConfig.reportId ?? 'default';
   const enforce = options.enforce ?? fileConfig.enforce ?? true;
   const failOnEmpty = options.failOnEmpty ?? fileConfig.failOnEmpty ?? true;
   const globalFormat = options.format ?? fileConfig.format ?? 'auto';
+  const globalInclude = options.include?.length ? options.include : (fileConfig.include ?? []);
   const globalExclude = options.exclude?.length ? options.exclude : (fileConfig.exclude ?? []);
   const globalThresholds = mergeThresholds(fileConfig.thresholds, options.thresholds);
+
+  const useGroups = Boolean(fileConfig.groups && fileConfig.groups.length > 0 && (isExplicitConfig || !options.files?.length));
+  const anyDiffThreshold =
+    hasDiffThreshold(globalThresholds) || (useGroups && (fileConfig.groups ?? []).some((g) => hasDiffThreshold(g.thresholds)));
+
+  if (options.diffFetchError && anyDiffThreshold && enforce) {
+    throw new Error(options.diffFetchError);
+  }
+  const diffWarnings: EvaluationWarning[] = options.diffFetchError
+    ? [{ group: 'Overall', code: 'DIFF_UNAVAILABLE', message: options.diffFetchError }]
+    : [];
 
   const repoFiles = options.repoFiles ?? getRepoFiles(workingDir);
   const normalizePath = createPathNormalizer(repoFiles, workingDir);
   const normalizedChanged = normalizeChangedLines(options.changedLines, normalizePath);
 
-  if (fileConfig.groups && fileConfig.groups.length > 0) {
+  if (useGroups && fileConfig.groups) {
     const groupVerdicts: GroupVerdict[] = [];
     for (const grp of fileConfig.groups) {
       const resolvedGroup: GroupConfig = {
         name: grp.name,
         files: grp.files,
+        include: grp.include?.length ? grp.include : globalInclude,
         exclude: [...globalExclude, ...(grp.exclude ?? [])],
         format: grp.format ?? globalFormat,
-        thresholds: mergeThresholds(globalThresholds, grp.thresholds),
+        thresholds: enforceThresholdFloor(mergeThresholds(fileConfig.thresholds, grp.thresholds), options.thresholds),
       };
       groupVerdicts.push(
         await processGroup(resolvedGroup, workingDir, normalizePath, normalizedChanged, registry, enforce, failOnEmpty),
@@ -150,7 +221,9 @@ export async function runVerdict(
     const allFiles = mergeFileMaps(groupVerdicts.map((g) => g.files));
     const allMatched = Array.from(new Set(groupVerdicts.flatMap((g) => g.matchedFiles))).sort();
     const allFormats = Array.from(new Set(groupVerdicts.flatMap((g) => g.formats)));
-    const overallDiff = normalizedChanged ? computeDiffCoverage(allFiles, normalizedChanged) : null;
+    const overallDiff = normalizedChanged
+      ? computeDiffCoverage(allFiles, normalizedChanged, { include: globalInclude, exclude: globalExclude })
+      : null;
 
     const overall = evaluateGroup({
       name: 'Overall',
@@ -160,14 +233,16 @@ export async function runVerdict(
       diffCoverage: overallDiff,
       thresholds: globalThresholds,
     });
+    overall.warnings = [...diffWarnings, ...overall.warnings];
 
     const allViolations = [
       ...groupVerdicts.flatMap((g) => g.violations),
       ...overall.violations,
     ];
     const allWarnings = [
+      ...diffWarnings,
       ...groupVerdicts.flatMap((g) => g.warnings),
-      ...overall.warnings,
+      ...overall.warnings.filter((w) => !diffWarnings.includes(w)),
     ];
     const passed = groupVerdicts.every((g) => g.passed) && overall.passed;
     overall.passed = passed;
@@ -193,6 +268,7 @@ export async function runVerdict(
     {
       name: 'Overall',
       files,
+      include: globalInclude,
       exclude: globalExclude,
       format: globalFormat,
       thresholds: globalThresholds,
@@ -204,6 +280,7 @@ export async function runVerdict(
     enforce,
     failOnEmpty,
   );
+  singleVerdict.warnings = [...diffWarnings, ...singleVerdict.warnings];
 
   return {
     title,

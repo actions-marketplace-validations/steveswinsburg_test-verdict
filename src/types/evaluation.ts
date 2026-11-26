@@ -13,7 +13,7 @@ export interface ThresholdViolation {
 /** Non-fatal evaluation warning (e.g. threshold metric unavailable in report format). */
 export interface EvaluationWarning {
   group: string;
-  code: 'METRIC_UNAVAILABLE' | 'EMPTY_REPORTS' | 'FORK_COMMENT_PERMISSION';
+  code: 'METRIC_UNAVAILABLE' | 'EMPTY_REPORTS' | 'DIFF_UNAVAILABLE' | 'FORK_COMMENT_PERMISSION';
   message: string;
 }
 

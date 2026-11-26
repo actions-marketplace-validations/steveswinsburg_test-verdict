@@ -19,7 +19,9 @@ Usage:
 Options:
   -f, --files <glob>          Coverage report glob pattern (repeatable)
       --format <fmt>          auto | lcov | cobertura | jacoco | istanbul | gocover | opencover
-  -c, --config <path>         Path to .test-verdict.yml
+  -c, --config <path>         Path to .test-verdict.yml (or "none"/"false" to disable)
+      --no-config             Disable auto-loading .test-verdict.yml
+      --include <glob>        Source file glob to include (repeatable; unmeasured diff files count as 0%)
   -e, --exclude <glob>        Source file glob to exclude (repeatable)
       --report-id <id>        Sticky comment report ID (default: "default")
       --title <text>          Report title (default: "Test Verdict")
@@ -31,7 +33,7 @@ Options:
       --diff-base <ref>       Git ref to diff against (e.g. origin/main, HEAD~1)
       --working-dir <dir>     Working directory (default: ".")
       --enforce               Exit non-zero on threshold breach (default: true; use --no-enforce to warn only)
-      --fail-on-empty         Fail when no reports match (default: true; use --no-fail-on-empty)
+      --fail-on-empty         Fail when no reports match or contain no measured files (default: true; use --no-fail-on-empty)
       --markdown              Print Markdown report to stdout
       --json                  Print JSON summary to stdout
   -h, --help                  Show this help message
@@ -84,6 +86,8 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
       files: { type: 'string', short: 'f', multiple: true },
       format: { type: 'string' },
       config: { type: 'string', short: 'c' },
+      'no-config': { type: 'boolean' },
+      include: { type: 'string', multiple: true },
       exclude: { type: 'string', short: 'e', multiple: true },
       'report-id': { type: 'string' },
       title: { type: 'string' },
@@ -117,8 +121,9 @@ export async function runCli(argv = process.argv.slice(2)): Promise<number> {
 
   const result = await runVerdict({
     workingDirectory: workingDir,
-    configPath: values.config,
+    configPath: values['no-config'] ? false : values.config,
     files: values.files,
+    include: values.include,
     exclude: values.exclude,
     format: values.format as FormatId | 'auto' | undefined,
     reportId: values['report-id'],
