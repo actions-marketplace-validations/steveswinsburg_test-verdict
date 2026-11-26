@@ -36,7 +36,7 @@ const commonOptions = {
   platform: 'node',
   format: 'cjs',
   sourcemap: false,
-  minify: false,
+  minify: true,
   logLevel: 'info',
 };
 
