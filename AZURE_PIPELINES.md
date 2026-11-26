@@ -129,13 +129,17 @@ npm run package:azure
 
 This builds `azure-pipelines/task/index.cjs` (keeping version numbers in [azure-pipelines/vss-extension.json](azure-pipelines/vss-extension.json) and [azure-pipelines/task/task.json](azure-pipelines/task/task.json) synced with `package.json`) and creates `dist/steveswinsburg.test-verdict-<version>.vsix`.
 
-To publish or share via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage):
+To publish or share via the [Visual Studio Marketplace](https://marketplace.visualstudio.com/manage), create an **organization-scoped PAT** (tied to a single Azure DevOps organization with **Marketplace -> Manage** scope, since global "All accessible organizations" PATs are retired in January 2027) and run:
 
 ```bash
-# Publish to the Marketplace using a PAT with Marketplace (Manage) scope
+# Publish to the Marketplace using an organization-scoped PAT with Marketplace (Manage) scope
 npx tfx-cli extension publish \
   --vsix dist/steveswinsburg.test-verdict-$(node -p "require('./package.json').version").vsix \
   --token "$AZURE_MARKETPLACE_PAT"
 ```
 
 You can also upload the `.vsix` directly in Visual Studio Marketplace as a private extension and share it with specific Azure DevOps organizations before making it public.
+
+### Automated Publishing via GitHub Actions
+
+On every new release pushed to `main`, [.github/workflows/ci.yml](.github/workflows/ci.yml) automatically packages the `.vsix`, attaches it as an asset on the GitHub Release, and publishes it to the Visual Studio Marketplace using the `AZURE_MARKETPLACE_PAT` repository secret.

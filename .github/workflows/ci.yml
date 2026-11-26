@@ -22,8 +22,8 @@ jobs:
       - run: npm run typecheck
       - run: npm run test:coverage
       - run: npm run build
-      - name: Verify dist is up to date
-        run: git diff --exit-code dist/
+      - name: Verify dist and Azure manifests are up to date
+        run: git diff --exit-code dist/ azure-pipelines/
       - name: Dogfood test-verdict CLI
         run: node dist/cli.cjs --files coverage/lcov.info --min-line 80 --markdown
 
@@ -50,8 +50,8 @@ jobs:
       - run: npm run typecheck
       - run: npm test
       - run: npm run build
-      - name: Verify dist is up to date
-        run: git diff --exit-code dist/
+      - name: Verify dist and Azure manifests are up to date
+        run: git diff --exit-code dist/ azure-pipelines/
       - name: Publish to npm
         run: |
           version="$(node -p "require('./package.json').version")"
@@ -101,3 +101,32 @@ jobs:
           else
             echo "Skipping floating major tag update for non-stable tag $VERSION"
           fi
+      - name: Package Azure Pipelines extension (.vsix)
+        id: azure-package
+        if: steps.release.outputs.created == 'true'
+        run: |
+          npm run package:azure
+          version="$(node -p "require('./package.json').version")"
+          vsix="dist/steveswinsburg.test-verdict-${version}.vsix"
+          test -f "$vsix"
+          echo "vsix=${vsix}" >> "$GITHUB_OUTPUT"
+      - name: Attach .vsix to GitHub Release
+        if: steps.release.outputs.created == 'true'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ steps.release.outputs.version }}
+          VSIX: ${{ steps.azure-package.outputs.vsix }}
+        run: gh release upload "$VERSION" "$VSIX" --clobber
+      - name: Publish Azure DevOps extension to Visual Studio Marketplace
+        if: steps.release.outputs.created == 'true'
+        env:
+          AZURE_MARKETPLACE_PAT: ${{ secrets.AZURE_MARKETPLACE_PAT }}
+          VSIX: ${{ steps.azure-package.outputs.vsix }}
+        run: |
+          if [ -z "$AZURE_MARKETPLACE_PAT" ]; then
+            echo "AZURE_MARKETPLACE_PAT is not set, skipping Visual Studio Marketplace publish"
+            exit 0
+          fi
+          npx --yes tfx-cli extension publish \
+            --vsix "$VSIX" \
+            --token "$AZURE_MARKETPLACE_PAT"

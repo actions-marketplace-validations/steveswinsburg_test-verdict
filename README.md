@@ -232,17 +232,18 @@ npm run package:azure   # package Azure Pipelines .vsix into dist/
 ```bash
 npm version patch --no-git-tag-version   # or minor / major
 npm run build
-git add package.json package-lock.json dist/
+git add package.json package-lock.json dist/ azure-pipelines/vss-extension.json azure-pipelines/task/task.json
 git commit -m "chore: release v$(node -p "require('./package.json').version")"
 git push origin main
 ```
 
 On push to `main`, `.github/workflows/ci.yml` automatically:
 
-1. Runs typecheck, tests, coverage, and `dist/` verification across Node 22, 24, and 26.
+1. Runs typecheck, tests, coverage, and `dist/` + Azure extension manifest verification.
 2. Publishes the new version to npmjs via Trusted Publishing (OIDC) if not already published.
 3. Creates the `v<version>` GitHub Release with auto-generated release notes.
 4. Updates the floating major tag (e.g. `v1` for `v1.x.x`) for GitHub Action consumers.
+5. Packages the Azure Pipelines `.vsix`, attaches it to the GitHub Release, and publishes it to the Visual Studio Marketplace when `AZURE_MARKETPLACE_PAT` is set.
 
 > To list a release on GitHub Actions Marketplace, edit the created GitHub Release and check **Publish this Action to the GitHub Marketplace**.
 
