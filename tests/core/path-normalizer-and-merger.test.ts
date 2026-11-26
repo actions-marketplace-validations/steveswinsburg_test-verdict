@@ -16,9 +16,12 @@ describe('path normalizer, merger, and metrics', () => {
 
     expect(normalizePathSeparators('.\\src\\Calc.cs')).toBe('src/Calc.cs');
     expect(normalize('/home/runner/work/org/repo/apps/web/src/index.ts')).toBe('apps/web/src/index.ts');
+    expect(normalize('/home/vsts/work/1/s/apps/web/src/index.ts')).toBe('apps/web/src/index.ts');
+    expect(normalize('/Users/runner/work/1/s/apps/web/src/index.ts')).toBe('apps/web/src/index.ts');
     expect(normalize('/app/apps/web/src/index.ts')).toBe('apps/web/src/index.ts');
     expect(normalize('com/acme/OrderService.java')).toBe('services/api/src/main/java/com/acme/OrderService.java');
     expect(normalize('C:\\repo\\src\\Calc.cs')).toBe('src/Calc.cs');
+    expect(normalize('D:\\a\\1\\s\\src\\Calc.cs')).toBe('src/Calc.cs');
     expect(normalize('github.com/acme/repo/pkg/calc.go')).toBe('pkg/calc.go');
     expect(normalize('unmatched/file.ts')).toBe('unmatched/file.ts');
   });
@@ -81,7 +84,7 @@ describe('path normalizer, merger, and metrics', () => {
   });
 
   it('formats consecutive line numbers into compact ranges', () => {
-    expect(formatLineRanges([])).toBe('—');
+    expect(formatLineRanges([])).toBe('-');
     expect(formatLineRanges([12, 3, 4, 5, 9, 11, 5])).toBe('3-5, 9, 11-12');
   });
 });

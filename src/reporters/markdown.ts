@@ -10,12 +10,12 @@ export function buildStickyMarker(reportId: string): string {
 }
 
 function fmtMetric(metric: MetricSummary): string {
-  if (metric === null) return '—';
+  if (metric === null) return '-';
   return `${metric.pct.toFixed(1)}% (${metric.covered}/${metric.total})`;
 }
 
 function fmtDiffMetric(verdict: GroupVerdict): string {
-  if (!verdict.diffCoverage || verdict.diffCoverage.pct === null) return '—';
+  if (!verdict.diffCoverage || verdict.diffCoverage.pct === null) return '-';
   return `${verdict.diffCoverage.pct.toFixed(1)}% (${verdict.diffCoverage.coveredLines}/${verdict.diffCoverage.coverableLines})`;
 }
 
@@ -34,7 +34,7 @@ function summarizeSingleFileRow(file: FileCoverage): {
   branches: string;
   functions: string;
 } {
-  let lineText = '—';
+  let lineText = '-';
   if (file.lines.size > 0) {
     let covered = 0;
     for (const hits of file.lines.values()) {
@@ -46,7 +46,7 @@ function summarizeSingleFileRow(file: FileCoverage): {
     lineText = fmtMetric(file.summaryOverride.lines);
   }
 
-  let branchText = '—';
+  let branchText = '-';
   if (file.branches !== null) {
     const covered = file.branches.reduce((acc, b) => acc + b.covered, 0);
     const total = file.branches.reduce((acc, b) => acc + b.total, 0);
@@ -56,7 +56,7 @@ function summarizeSingleFileRow(file: FileCoverage): {
     branchText = fmtMetric(file.summaryOverride.branches);
   }
 
-  let fnText = '—';
+  let fnText = '-';
   if (file.functions !== null) {
     const covered = file.functions.filter((f) => f.hits > 0).length;
     const total = file.functions.length;
@@ -89,7 +89,7 @@ export function renderVerdictMarkdown(result: VerdictResult, options: RenderMark
 
   const headerParts: string[] = [
     marker,
-    `## ${result.title} — ${statusBadge}`,
+    `## ${result.title} - ${statusBadge}`,
     '',
     '| Suite | Lines | Branches | Functions | PR Diff | Status |',
     '| :--- | ---: | ---: | ---: | ---: | :---: |',
@@ -123,7 +123,7 @@ export function renderVerdictMarkdown(result: VerdictResult, options: RenderMark
   const diffFiles = result.overall.diffCoverage?.files.filter((f) => f.coverableLines > 0) ?? [];
   const diffRows = diffFiles.map(
     (f) =>
-      `| \`${f.path}\` | ${f.changedLines} | ${f.pct !== null ? `${f.pct.toFixed(1)}% (${f.coveredLines}/${f.coverableLines})` : '—'} | ${formatLineRanges(f.uncoveredLines)} |`,
+      `| \`${f.path}\` | ${f.changedLines} | ${f.pct !== null ? `${f.pct.toFixed(1)}% (${f.coveredLines}/${f.coverableLines})` : '-'} | ${formatLineRanges(f.uncoveredLines)} |`,
   );
 
   const allFiles = Array.from(result.overall.files.values()).sort((a, b) => a.path.localeCompare(b.path));
@@ -230,13 +230,13 @@ export function buildSummaryJson(result: VerdictResult): {
     summary: result.overall.summary,
     diffCoverage: result.overall.diffCoverage
       ? {
-          coverableLines: result.overall.diffCoverage.coverableLines,
-          coveredLines: result.overall.diffCoverage.coveredLines,
-          pct: result.overall.diffCoverage.pct,
-          branchCovered: result.overall.diffCoverage.branchCovered,
-          branchTotal: result.overall.diffCoverage.branchTotal,
-          branchPct: result.overall.diffCoverage.branchPct,
-        }
+        coverableLines: result.overall.diffCoverage.coverableLines,
+        coveredLines: result.overall.diffCoverage.coveredLines,
+        pct: result.overall.diffCoverage.pct,
+        branchCovered: result.overall.diffCoverage.branchCovered,
+        branchTotal: result.overall.diffCoverage.branchTotal,
+        branchPct: result.overall.diffCoverage.branchPct,
+      }
       : null,
     groups: result.groups.map((g) => ({
       name: g.name,

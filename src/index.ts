@@ -21,4 +21,19 @@ export { computePct, formatLineRanges, summarizeFile, summarizeFiles } from './c
 export { createPathNormalizer, getRepoFiles, normalizePathSeparators, stripKnownPrefixes } from './core/path-normalizer.js';
 export { runVerdict } from './core/runner.js';
 
+export {
+  buildAzureAuthHeader,
+  emitAzureAnnotations,
+  emitAzureOutputs,
+  escapeVsoValue,
+  getAzureTaskInput,
+  resolveAzureContext,
+  resolveAzureTargetBranch,
+  resolveAzureToken,
+  resolveAzureWorkingDirectory,
+  setAzureTaskResult,
+  upsertAzurePrComment,
+  writeAzureBuildSummary,
+} from './reporters/azure.js';
+export type { AzureCommentUpsertResult, AzurePrContext, AzureThreadStatus } from './reporters/azure.js';
 export { buildStickyMarker, buildSummaryJson, DEFAULT_MAX_COMMENT_LENGTH, renderVerdictMarkdown } from './reporters/markdown.js';

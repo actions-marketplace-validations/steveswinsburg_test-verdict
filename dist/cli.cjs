@@ -14974,7 +14974,7 @@ function summarizeFiles(files) {
   };
 }
 function formatLineRanges(lines) {
-  if (lines.length === 0) return "\u2014";
+  if (lines.length === 0) return "-";
   const sorted = Array.from(new Set(lines)).sort((a, b) => a - b);
   const ranges = [];
   let start = sorted[0];
@@ -20226,6 +20226,8 @@ var import_node_child_process = require("node:child_process");
 var import_node_path2 = __toESM(require("node:path"), 1);
 var RUNNER_PREFIX_PATTERNS = [
   /^\/home\/runner\/work\/[^/]+\/[^/]+\//,
+  /^\/home\/vsts\/work\/[^/]+\/s\//,
+  /^\/Users\/runner\/work\/[^/]+\/[^/]+\//,
   /^\/github\/workspace\//,
   /^\/__w\/[^/]+\/[^/]+\//,
   /^\/workspace\//,
@@ -20470,11 +20472,11 @@ function buildStickyMarker(reportId) {
   return `${STICKY_MARKER_PREFIX}${reportId} -->`;
 }
 function fmtMetric(metric) {
-  if (metric === null) return "\u2014";
+  if (metric === null) return "-";
   return `${metric.pct.toFixed(1)}% (${metric.covered}/${metric.total})`;
 }
 function fmtDiffMetric(verdict) {
-  if (!verdict.diffCoverage || verdict.diffCoverage.pct === null) return "\u2014";
+  if (!verdict.diffCoverage || verdict.diffCoverage.pct === null) return "-";
   return `${verdict.diffCoverage.pct.toFixed(1)}% (${verdict.diffCoverage.coveredLines}/${verdict.diffCoverage.coverableLines})`;
 }
 function fmtGroupStatus(verdict, enforce) {
@@ -20486,7 +20488,7 @@ function renderSummaryRow(label, verdict, enforce, bold = false) {
   return `| ${wrap(label)} | ${wrap(fmtMetric(verdict.summary.lines))} | ${wrap(fmtMetric(verdict.summary.branches))} | ${wrap(fmtMetric(verdict.summary.functions))} | ${wrap(fmtDiffMetric(verdict))} | ${fmtGroupStatus(verdict, enforce)} |`;
 }
 function summarizeSingleFileRow(file) {
-  let lineText = "\u2014";
+  let lineText = "-";
   if (file.lines.size > 0) {
     let covered = 0;
     for (const hits of file.lines.values()) {
@@ -20497,7 +20499,7 @@ function summarizeSingleFileRow(file) {
   } else if (file.summaryOverride?.lines) {
     lineText = fmtMetric(file.summaryOverride.lines);
   }
-  let branchText = "\u2014";
+  let branchText = "-";
   if (file.branches !== null) {
     const covered = file.branches.reduce((acc, b) => acc + b.covered, 0);
     const total = file.branches.reduce((acc, b) => acc + b.total, 0);
@@ -20506,7 +20508,7 @@ function summarizeSingleFileRow(file) {
   } else if (file.summaryOverride?.branches) {
     branchText = fmtMetric(file.summaryOverride.branches);
   }
-  let fnText = "\u2014";
+  let fnText = "-";
   if (file.functions !== null) {
     const covered = file.functions.filter((f) => f.hits > 0).length;
     const total = file.functions.length;
@@ -20526,7 +20528,7 @@ function renderVerdictMarkdown(result, options = {}) {
   const statusBadge = result.passed ? "\u2705 Passed" : result.enforce ? "\u274C Failed" : "\u26A0\uFE0F Thresholds not met (warn only)";
   const headerParts = [
     marker,
-    `## ${result.title} \u2014 ${statusBadge}`,
+    `## ${result.title} - ${statusBadge}`,
     "",
     "| Suite | Lines | Branches | Functions | PR Diff | Status |",
     "| :--- | ---: | ---: | ---: | ---: | :---: |"
@@ -20554,7 +20556,7 @@ function renderVerdictMarkdown(result, options = {}) {
   const baseHeader = headerParts.join("\n");
   const diffFiles = result.overall.diffCoverage?.files.filter((f) => f.coverableLines > 0) ?? [];
   const diffRows = diffFiles.map(
-    (f) => `| \`${f.path}\` | ${f.changedLines} | ${f.pct !== null ? `${f.pct.toFixed(1)}% (${f.coveredLines}/${f.coverableLines})` : "\u2014"} | ${formatLineRanges(f.uncoveredLines)} |`
+    (f) => `| \`${f.path}\` | ${f.changedLines} | ${f.pct !== null ? `${f.pct.toFixed(1)}% (${f.coveredLines}/${f.coverableLines})` : "-"} | ${formatLineRanges(f.uncoveredLines)} |`
   );
   const allFiles = Array.from(result.overall.files.values()).sort((a, b) => a.path.localeCompare(b.path));
   const allFileRows = allFiles.map((f) => {
@@ -20645,7 +20647,7 @@ function buildSummaryJson(result) {
 // src/cli/main.ts
 var VERSION = true ? "0.4.0" : "0.0.0-dev";
 function printHelp() {
-  console.log(`test-verdict v${VERSION} \u2014 Universal coverage report aggregator and PR gate
+  console.log(`test-verdict v${VERSION} - Universal coverage report aggregator and PR gate
 
 Usage:
   test-verdict [options]

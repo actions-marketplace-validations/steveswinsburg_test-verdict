@@ -3,6 +3,8 @@ import path from 'node:path';
 
 const RUNNER_PREFIX_PATTERNS = [
   /^\/home\/runner\/work\/[^/]+\/[^/]+\//,
+  /^\/home\/vsts\/work\/[^/]+\/s\//,
+  /^\/Users\/runner\/work\/[^/]+\/[^/]+\//,
   /^\/github\/workspace\//,
   /^\/__w\/[^/]+\/[^/]+\//,
   /^\/workspace\//,

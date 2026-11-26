@@ -1,0 +1,64 @@
+{
+  "manifestVersion": 1,
+  "id": "test-verdict",
+  "name": "Test Verdict",
+  "version": "0.4.0",
+  "publisher": "steveswinsburg",
+  "public": true,
+  "targets": [
+    {
+      "id": "Microsoft.VisualStudio.Services"
+    }
+  ],
+  "description": "Universal test & code coverage PR decorator and merge gate for JaCoCo, Cobertura, LCOV, Istanbul/Jest, Go, and OpenCover.",
+  "categories": [
+    "Azure Pipelines"
+  ],
+  "tags": [
+    "coverage",
+    "code-coverage",
+    "pull-request",
+    "jacoco",
+    "cobertura",
+    "lcov",
+    "istanbul",
+    "opencover",
+    "gocover"
+  ],
+  "icons": {
+    "default": "images/icon.png"
+  },
+  "content": {
+    "details": {
+      "path": "overview.md"
+    }
+  },
+  "links": {
+    "home": {
+      "uri": "https://github.com/steveswinsburg/test-verdict"
+    },
+    "repository": {
+      "uri": "https://github.com/steveswinsburg/test-verdict"
+    },
+    "issues": {
+      "uri": "https://github.com/steveswinsburg/test-verdict/issues"
+    }
+  },
+  "files": [
+    {
+      "path": "task"
+    }
+  ],
+  "contributions": [
+    {
+      "id": "test-verdict-task",
+      "type": "ms.vss-distributed-task.task",
+      "targets": [
+        "ms.vss-distributed-task.tasks"
+      ],
+      "properties": {
+        "name": "task"
+      }
+    }
+  ]
+}
