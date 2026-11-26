@@ -18,6 +18,7 @@ Copy-pasteable workflows and CLI commands covering every supported coverage repo
   - [10. Job Step Summary Only (No PR Comments)](#10-job-step-summary-only-no-pr-comments)
   - [11. Polyglot Monorepo with `.test-verdict.yml` and `working-directory`](#11-polyglot-monorepo-with-test-verdictyml-and-working-directory)
   - [12. Using Action Outputs in Downstream Steps](#12-using-action-outputs-in-downstream-steps)
+  - [13. Locked-Down Org Gate (`config: none`, `include`, `persist-credentials: false`)](#13-locked-down-org-gate-config-none-include-persist-credentials-false)
 - [Standalone CLI Recipes](#standalone-cli-recipes)
 
 ---
@@ -27,6 +28,8 @@ Copy-pasteable workflows and CLI commands covering every supported coverage repo
 ### 1. LCOV (`.info`) - TypeScript / Vitest
 
 Auto-detects `coverage/lcov.info`, excludes generated/test files, and enforces overall line, branch, function, and PR diff line thresholds.
+
+> **Tip for newly added files:** Enable `coverage.all: true` in Vitest/Jest or pass `include: src/**/*.ts` so newly added untested files absent from `lcov.info` are still counted as `0%` covered in PR diff coverage.
 
 ```yaml
 name: Coverage (LCOV)
@@ -433,6 +436,29 @@ Capture the step outputs (`line-coverage`, `branch-coverage`, `function-coverage
           echo "Function coverage: ${{ steps.verdict.outputs.function-coverage }}%"
           echo "Diff coverage: ${{ steps.verdict.outputs.diff-coverage }}%"
           echo '${{ steps.verdict.outputs.summary-json }}' | jq '.overall.summary'
+```
+
+### 13. Locked-Down Org Gate (`config: none`, `include`, `persist-credentials: false`)
+
+Prevent PR branches from altering coverage rules via `.test-verdict.yml`, ensure newly added untested source files count as `0%` diff coverage, and avoid leaving checkout tokens on disk:
+
+```yaml
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - run: npm ci && npx vitest run --coverage --coverage.reporter=lcov
+
+      - uses: steveswinsburg/test-verdict@v1
+        with:
+          files: coverage/lcov.info
+          config: none
+          include: src/**/*.ts
+          exclude: |
+            **/*.test.ts
+            **/*.generated.ts
+          min-line: 80
+          min-diff-line: 90
 ```
 
 ---

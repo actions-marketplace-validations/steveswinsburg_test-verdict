@@ -46,6 +46,18 @@ function makeResult(fileCount = 2, passed = true): VerdictResult {
             branchTotal: 0,
             branchPct: null,
           },
+          {
+            path: 'src/unmeasured.ts',
+            changedLines: 2,
+            coverableLines: 2,
+            coveredLines: 0,
+            uncoveredLines: [1, 2],
+            pct: 0,
+            branchCovered: 0,
+            branchTotal: 0,
+            branchPct: null,
+            unmeasured: true,
+          },
         ],
         coverableLines: 3,
         coveredLines: 2,
@@ -77,6 +89,7 @@ describe('markdown and GitHub reporters', () => {
     expect(md).toContain(buildStickyMarker('unit-suite'));
     expect(md).toContain('❌ Failed');
     expect(md).toContain('`src/changed.ts`');
+    expect(md).toContain('`src/unmeasured.ts` | 2 | 0.0% (0/2) (not in report) | 1-2 |');
     expect(md).toContain('Overall: line coverage 50% < 80%');
 
     const json = buildSummaryJson(result);

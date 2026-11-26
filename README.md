@@ -79,6 +79,15 @@ Set `enforce: true` (the default) and mark the workflow job as a **required stat
 
 On `pull_request` events from forks, GitHub supplies a read-only `GITHUB_TOKEN`. If `test-verdict` can't post comments with this token, it will still writes the Job Step Summary, and still enforce the thresholds.
 
+### Security Hardening
+
+For locked-down organization or reusable workflows:
+
+- **Avoid persisted credentials on disk**: Pass `persist-credentials: false` to `actions/checkout` (or evaluate coverage in a separate job that only downloads the coverage artifact) if earlier steps use minted GitHub App tokens or PATs.
+- **Ignore repo-committed config**: Pass `config: none` so a pull request cannot commit `.test-verdict.yml` to exclude files or override workflow thresholds.
+- **Count brand-new untested files in PR diff**: Pass `include:` globs (for example `src/**/*.ts`) and/or enable `coverage.all: true` in your test runner so newly added files absent from the report count as `0%` diff coverage instead of `0/0`.
+- **Pin by commit SHA**: Pin `steveswinsburg/test-verdict@<full-commit-sha>` in high-security pipelines.
+
 ## Monorepo Coverage Groups
 
 Create an optional `.test-verdict.yml` at the repository root to evaluate multiple suites or packages with independent thresholds in one step:
@@ -111,7 +120,8 @@ groups:
 | :--- | :--- | :--- |
 | `files` | - | Newline or comma-separated coverage report globs |
 | `format` | `auto` | `auto` \| `lcov` \| `cobertura` \| `jacoco` \| `istanbul` \| `gocover` \| `opencover` |
-| `config` | `.test-verdict.yml` | Path to optional YAML config file |
+| `config` | `.test-verdict.yml` | Path to optional YAML config file, or `none` / `false` to disable |
+| `include` | - | Newline or comma-separated source path inclusion globs (missing diff files count as 0%) |
 | `exclude` | - | Newline or comma-separated source path exclusion globs |
 | `report-id` | `default` | Identifier for sticky PR comments across multiple steps |
 | `title` | `Test Verdict` | Heading for PR comments and step summaries |
@@ -121,7 +131,7 @@ groups:
 | `min-diff-line` | - | Minimum PR changed-lines coverage % (0–100) |
 | `min-diff-branch` | - | Minimum PR changed-lines branch coverage % (0–100) |
 | `enforce` | `true` | Fail the check when thresholds are breached |
-| `fail-on-empty` | `true` | Fail if no coverage files match `files` |
+| `fail-on-empty` | `true` | Fail if no coverage files match or parsed reports contain no measured files |
 | `comment` | `true` | Post or update sticky PR comment |
 | `step-summary` | `true` | Write Job Step Summary |
 | `github-token` | `${{ github.token }}` | Token used for PR diff and comments |
@@ -157,7 +167,9 @@ npx test-verdict --files coverage/lcov.info --min-line 80 --diff-base origin/mai
 | :--- | :--- |
 | `-f, --files <glob>` | Coverage report glob pattern (repeatable) |
 | `--format <fmt>` | `auto` \| `lcov` \| `cobertura` \| `jacoco` \| `istanbul` \| `gocover` \| `opencover` |
-| `-c, --config <path>` | Path to `.test-verdict.yml` |
+| `-c, --config <path>` | Path to `.test-verdict.yml` (or `none` / `false` to disable) |
+| `--no-config` | Disable auto-loading `.test-verdict.yml` |
+| `--include <glob>` | Source file glob to include (repeatable; missing diff files count as 0%) |
 | `-e, --exclude <glob>` | Source file glob to exclude (repeatable) |
 | `--report-id <id>` | Sticky comment report ID (default: `"default"`) |
 | `--title <text>` | Report title (default: `"Test Verdict"`) |
@@ -169,7 +181,7 @@ npx test-verdict --files coverage/lcov.info --min-line 80 --diff-base origin/mai
 | `--diff-base <ref>` | Git ref to diff against (e.g. `origin/main`, `HEAD~1`) |
 | `--working-dir <dir>` | Working directory (default: `.`) |
 | `--enforce` / `--no-enforce` | Exit non-zero on threshold breach (default: `true`) |
-| `--fail-on-empty` / `--no-fail-on-empty` | Fail when no reports match (default: `true`) |
+| `--fail-on-empty` / `--no-fail-on-empty` | Fail when no reports match or contain no measured files (default: `true`) |
 | `--markdown` | Print Markdown report to stdout |
 | `--json` | Print JSON summary to stdout |
 | `-h, --help` | Show help message |

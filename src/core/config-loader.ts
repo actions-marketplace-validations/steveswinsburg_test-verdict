@@ -71,6 +71,7 @@ function parseGroups(raw: unknown): GroupConfig[] | undefined {
     return {
       name,
       files,
+      include: parseStringArray(obj.include),
       exclude: parseStringArray(obj.exclude),
       format: parseFormat(obj.format),
       thresholds: parseThresholds(obj.thresholds),
@@ -78,13 +79,25 @@ function parseGroups(raw: unknown): GroupConfig[] | undefined {
   });
 }
 
+/** Return true when config auto-loading is explicitly disabled (`false`, `"none"`, or `"false"`). */
+export function isConfigDisabled(configPath: string | false | undefined): boolean {
+  if (configPath === false) return true;
+  if (typeof configPath !== 'string') return false;
+  const normalized = configPath.trim().toLowerCase();
+  return normalized === 'none' || normalized === 'false';
+}
+
 /** Load and validate an optional `.test-verdict.yml` config file. */
 export function loadConfigFile(
   workingDirectory: string,
-  configPath = '.test-verdict.yml',
+  configPath: string | false = '.test-verdict.yml',
   isExplicit = false,
 ): VerdictFileConfig {
-  const resolved = path.isAbsolute(configPath) ? configPath : path.resolve(workingDirectory, configPath);
+  if (isConfigDisabled(configPath)) {
+    return {};
+  }
+  const targetPath = typeof configPath === 'string' && configPath.trim() ? configPath : '.test-verdict.yml';
+  const resolved = path.isAbsolute(targetPath) ? targetPath : path.resolve(workingDirectory, targetPath);
   if (!existsSync(resolved)) {
     if (isExplicit) {
       throw new Error(`Config file not found: ${resolved}`);
@@ -103,6 +116,7 @@ export function loadConfigFile(
     title: obj.title !== undefined ? String(obj.title) : undefined,
     reportId: obj.reportId !== undefined ? String(obj.reportId) : obj['report-id'] !== undefined ? String(obj['report-id']) : undefined,
     files: parseStringArray(obj.files),
+    include: parseStringArray(obj.include),
     exclude: parseStringArray(obj.exclude),
     format: parseFormat(obj.format),
     thresholds: parseThresholds(obj.thresholds),

@@ -121,10 +121,13 @@ export function renderVerdictMarkdown(result: VerdictResult, options: RenderMark
   const baseHeader = headerParts.join('\n');
 
   const diffFiles = result.overall.diffCoverage?.files.filter((f) => f.coverableLines > 0) ?? [];
-  const diffRows = diffFiles.map(
-    (f) =>
-      `| \`${f.path}\` | ${f.changedLines} | ${f.pct !== null ? `${f.pct.toFixed(1)}% (${f.coveredLines}/${f.coverableLines})` : '—'} | ${formatLineRanges(f.uncoveredLines)} |`,
-  );
+  const diffRows = diffFiles.map((f) => {
+    const pctCell =
+      f.pct !== null
+        ? `${f.pct.toFixed(1)}% (${f.coveredLines}/${f.coverableLines})${f.unmeasured ? ' (not in report)' : ''}`
+        : '—';
+    return `| \`${f.path}\` | ${f.changedLines} | ${pctCell} | ${formatLineRanges(f.uncoveredLines)} |`;
+  });
 
   const allFiles = Array.from(result.overall.files.values()).sort((a, b) => a.path.localeCompare(b.path));
   const allFileRows = allFiles.map((f) => {

@@ -19,6 +19,7 @@ function checkMetricThreshold(
   label: string,
   actual: MetricSummary,
   expected: number | undefined,
+  hasFiles: boolean,
   violations: ThresholdViolation[],
   warnings: EvaluationWarning[],
 ): void {
@@ -27,7 +28,9 @@ function checkMetricThreshold(
     warnings.push({
       group,
       code: 'METRIC_UNAVAILABLE',
-      message: `Skipped ${label} threshold (${expected}%) for "${group}": parsed report format(s) did not provide ${label} coverage.`,
+      message: hasFiles
+        ? `Skipped ${label} threshold (${expected}%) for "${group}": parsed report format(s) did not provide ${label} coverage.`
+        : `Skipped ${label} threshold (${expected}%) for "${group}": no source files were measured.`,
     });
     return;
   }
@@ -46,12 +49,13 @@ function checkMetricThreshold(
 export function evaluateGroup(input: EvaluateGroupInput): GroupVerdict {
   const { name, matchedFiles, formats, files, diffCoverage, thresholds } = input;
   const summary = summarizeFiles(files.values());
+  const hasFiles = files.size > 0;
   const violations: ThresholdViolation[] = [];
   const warnings: EvaluationWarning[] = [];
 
-  checkMetricThreshold(name, 'line', 'line', summary.lines, thresholds.minLine, violations, warnings);
-  checkMetricThreshold(name, 'branch', 'branch', summary.branches, thresholds.minBranch, violations, warnings);
-  checkMetricThreshold(name, 'function', 'function', summary.functions, thresholds.minFunction, violations, warnings);
+  checkMetricThreshold(name, 'line', 'line', summary.lines, thresholds.minLine, hasFiles, violations, warnings);
+  checkMetricThreshold(name, 'branch', 'branch', summary.branches, thresholds.minBranch, hasFiles, violations, warnings);
+  checkMetricThreshold(name, 'function', 'function', summary.functions, thresholds.minFunction, hasFiles, violations, warnings);
 
   if (diffCoverage !== null && diffCoverage.coverableLines > 0) {
     if (thresholds.minDiffLine !== undefined && diffCoverage.pct !== null && diffCoverage.pct < thresholds.minDiffLine) {

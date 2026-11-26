@@ -13,7 +13,7 @@ export { opencoverParser } from './parsers/opencover.js';
 export type { CoverageParser } from './parsers/parser.js';
 export { createDefaultParserRegistry, ParserRegistry } from './parsers/registry.js';
 
-export { loadConfigFile } from './core/config-loader.js';
+export { isConfigDisabled, loadConfigFile } from './core/config-loader.js';
 export { computeDiffCoverage, parseGitHubFilePatch, parseUnifiedDiff } from './core/diff.js';
 export { evaluateGroup } from './core/evaluator.js';
 export { mergeFileCoverage, mergeFileMaps, mergeReports } from './core/merger.js';

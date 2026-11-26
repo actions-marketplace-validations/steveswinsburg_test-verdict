@@ -1,3 +1,4 @@
+import picomatch from 'picomatch';
 import type { FileCoverage } from '../types/coverage.js';
 import type { ChangedFileLines, DiffCoverageResult, FileDiffCoverage } from '../types/diff.js';
 import { computePct } from './metrics.js';
@@ -82,11 +83,19 @@ export function parseUnifiedDiff(diffText: string): ChangedFileLines {
   return result;
 }
 
+export interface ComputeDiffCoverageOptions {
+  include?: string[];
+  exclude?: string[];
+}
+
 /** Compute coverage for PR changed lines and branches on changed lines. */
 export function computeDiffCoverage(
   files: Map<string, FileCoverage>,
   changedLinesMap: ChangedFileLines,
+  options?: ComputeDiffCoverageOptions,
 ): DiffCoverageResult {
+  const isIncluded = options?.include?.length ? picomatch(options.include, { dot: true }) : null;
+  const isExcluded = options?.exclude?.length ? picomatch(options.exclude, { dot: true }) : null;
   const fileResults: FileDiffCoverage[] = [];
   let totalCoverable = 0;
   let totalCovered = 0;
@@ -96,6 +105,9 @@ export function computeDiffCoverage(
   const sortedChangedPaths = Array.from(changedLinesMap.keys()).sort();
 
   for (const filePath of sortedChangedPaths) {
+    if (isExcluded?.(filePath)) continue;
+    if (isIncluded && !isIncluded(filePath)) continue;
+
     const changedSet = changedLinesMap.get(filePath);
     if (!changedSet || changedSet.size === 0) continue;
 
@@ -105,6 +117,7 @@ export function computeDiffCoverage(
     const uncoveredLines: number[] = [];
     let branchCovered = 0;
     let branchTotal = 0;
+    let unmeasured = false;
 
     if (coverage) {
       const sortedLines = Array.from(changedSet).sort((a, b) => a - b);
@@ -127,6 +140,12 @@ export function computeDiffCoverage(
           }
         }
       }
+    } else {
+      unmeasured = true;
+      if (isIncluded) {
+        coverableLines = changedSet.size;
+        uncoveredLines.push(...Array.from(changedSet).sort((a, b) => a - b));
+      }
     }
 
     totalCoverable += coverableLines;
@@ -144,6 +163,7 @@ export function computeDiffCoverage(
       branchCovered,
       branchTotal,
       branchPct: branchTotal > 0 ? computePct(branchCovered, branchTotal) : null,
+      ...(unmeasured ? { unmeasured: true } : {}),
     });
   }
 

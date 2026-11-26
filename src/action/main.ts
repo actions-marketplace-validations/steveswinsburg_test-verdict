@@ -1,5 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
+import { isConfigDisabled } from '../core/config-loader.js';
 import { runVerdict } from '../core/runner.js';
 import { getPrChangedLines, upsertPrComment, writeStepSummary } from '../reporters/github.js';
 import { buildSummaryJson, DEFAULT_MAX_COMMENT_LENGTH, renderVerdictMarkdown } from '../reporters/markdown.js';
@@ -32,9 +33,11 @@ function parseBooleanInput(name: string, defaultValue: boolean): boolean {
 export async function runAction(): Promise<void> {
   const workingDirectory = core.getInput('working-directory') || '.';
   const filesInput = parseListInput(core.getInput('files'));
+  const includeInput = parseListInput(core.getInput('include'));
   const excludeInput = parseListInput(core.getInput('exclude'));
   const formatRaw = (core.getInput('format') || 'auto').trim().toLowerCase() as FormatId | 'auto';
-  const configInput = core.getInput('config').trim() || '.test-verdict.yml';
+  const configRaw = core.getInput('config').trim();
+  const configInput = isConfigDisabled(configRaw) ? false : configRaw || '.test-verdict.yml';
   const reportId = core.getInput('report-id').trim() || undefined;
   const title = core.getInput('title').trim() || undefined;
   const enforce = parseBooleanInput('enforce', true);
@@ -52,6 +55,7 @@ export async function runAction(): Promise<void> {
   };
 
   let changedLines: ChangedFileLines | undefined;
+  let diffFetchError: string | undefined;
   const prNumber = github.context.payload.pull_request?.number;
   const octokit = token ? github.getOctokit(token) : undefined;
   const prInfo =
@@ -63,11 +67,15 @@ export async function runAction(): Promise<void> {
         }
       : undefined;
 
-  if (octokit && prInfo) {
-    try {
-      changedLines = await getPrChangedLines(octokit, prInfo);
-    } catch (error) {
-      core.warning(`Failed to fetch PR changed lines from GitHub API: ${String(error)}`);
+  if (prInfo) {
+    if (!octokit) {
+      diffFetchError = 'Failed to fetch PR changed lines: no github-token provided.';
+    } else {
+      try {
+        changedLines = await getPrChangedLines(octokit, prInfo);
+      } catch (error) {
+        diffFetchError = `Failed to fetch PR changed lines from GitHub API: ${String(error)}`;
+      }
     }
   }
 
@@ -75,6 +83,7 @@ export async function runAction(): Promise<void> {
     workingDirectory,
     configPath: configInput,
     files: filesInput.length > 0 ? filesInput : undefined,
+    include: includeInput.length > 0 ? includeInput : undefined,
     exclude: excludeInput.length > 0 ? excludeInput : undefined,
     format: formatRaw,
     reportId,
@@ -83,6 +92,7 @@ export async function runAction(): Promise<void> {
     enforce,
     failOnEmpty,
     changedLines,
+    diffFetchError,
   });
 
   for (const w of result.warnings) {
