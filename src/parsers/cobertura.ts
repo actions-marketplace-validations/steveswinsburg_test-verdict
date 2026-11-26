@@ -1,3 +1,4 @@
+import { stripTrailingSlashes } from '../core/path-normalizer.js';
 import type { BranchEntry, FileCoverage, FunctionEntry, NormalizedCoverageReport } from '../types/coverage.js';
 import { type CoverageParser, parseXml, toArray, toInt } from './parser.js';
 
@@ -6,7 +7,7 @@ function joinSourceAndFilename(sources: string[], filename: string): string {
   if (/^([a-zA-Z]:\/|\/)/.test(cleanFile) || sources.length === 0) {
     return cleanFile;
   }
-  const source = sources[0]?.replace(/\\/g, '/').replace(/\/+$/, '') ?? '';
+  const source = stripTrailingSlashes((sources[0] ?? '').replace(/\\/g, '/'));
   if (!source || source === '.') {
     return cleanFile;
   }

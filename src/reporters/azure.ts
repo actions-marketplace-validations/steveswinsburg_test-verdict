@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import { stripTrailingSlashes } from '../core/path-normalizer.js';
 import type { VerdictResult } from '../types/evaluation.js';
 import { buildStickyMarker } from './markdown.js';
 
@@ -77,7 +78,7 @@ export function resolveAzureContext(env: NodeJS.ProcessEnv = process.env): Azure
   }
 
   return {
-    collectionUri: collectionUriRaw.replace(/\/+$/, ''),
+    collectionUri: stripTrailingSlashes(collectionUriRaw),
     project,
     repositoryId,
     pullRequestId,
@@ -176,7 +177,7 @@ export async function upsertAzurePrComment(
   const fetchFn = options.fetchFn ?? fetch;
   const authHeader = buildAzureAuthHeader(token);
   const marker = buildStickyMarker(reportId);
-  const baseUrl = `${pr.collectionUri.replace(/\/+$/, '')}/${encodeURIComponent(pr.project)}/_apis/git/repositories/${encodeURIComponent(pr.repositoryId)}/pullRequests/${pr.pullRequestId}/threads`;
+  const baseUrl = `${stripTrailingSlashes(pr.collectionUri)}/${encodeURIComponent(pr.project)}/_apis/git/repositories/${encodeURIComponent(pr.repositoryId)}/pullRequests/${pr.pullRequestId}/threads`;
 
   try {
     const threadsData = await azureJsonRequest<{ value?: AzureApiThread[] }>(
