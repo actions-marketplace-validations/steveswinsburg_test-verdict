@@ -2,7 +2,7 @@
   "manifestVersion": 1,
   "id": "test-verdict",
   "name": "Test Verdict",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "publisher": "steveswinsburg",
   "public": true,
   "targets": [
