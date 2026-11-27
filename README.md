@@ -96,17 +96,19 @@ steps:
   - checkout: self
     fetchDepth: 0
 
-  - script: npm ci && npm test -- --coverage
-    displayName: Run tests with coverage
+  # Run your test & coverage command (e.g. ./gradlew test jacocoTestReport, dotnet test, or npm test -- --coverage)
 
   - task: TestVerdict@0
     inputs:
-      files: coverage/lcov.info
+      files: |
+        **/jacocoTestReport.xml
+        coverage/lcov.info
+        TestResults/**/coverage.cobertura.xml
       minLine: '80'
       minDiffLine: '90'
 ```
 
-See [AZURE_PIPELINES.md](AZURE_PIPELINES.md) for all task inputs, output variables, Build Service permissions, Branch Policy setup, and `.vsix` packaging.
+See [AZURE_PIPELINES.md](AZURE_PIPELINES.md) for Java, .NET, and Node.js quickstarts, task inputs, output variables, Build Service permissions, and Branch Policy setup, or [EXAMPLES.md](EXAMPLES.md#azure-pipelines-recipes) for the full set of Azure Pipelines recipes.
 
 ### Standalone CLI
 

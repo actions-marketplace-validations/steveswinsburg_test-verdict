@@ -12,19 +12,60 @@ Universal test & code coverage PR decorator and merge gate for every major cover
 
 ## Quickstart
 
+### Java / Kotlin (JaCoCo)
+
+```yaml
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - script: ./gradlew test jacocoTestReport
+    displayName: Run tests with coverage
+
+  - task: TestVerdict@0
+    inputs:
+      files: '**/build/reports/jacoco/test/jacocoTestReport.xml'
+      minLine: '80'
+      minDiffLine: '90'
+```
+
+*(For Maven builds, point `files` at `**/target/site/jacoco/jacoco.xml`.)*
+
+### .NET (Cobertura)
+
+```yaml
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - script: dotnet test --collect:"XPlat Code Coverage" --results-directory TestResults
+    displayName: Run tests with coverage
+
+  - task: TestVerdict@0
+    inputs:
+      files: TestResults/**/coverage.cobertura.xml
+      minLine: '80'
+      minDiffLine: '90'
+```
+
+### Node.js / TypeScript (LCOV)
+
 ```yaml
 steps:
   - checkout: self
     fetchDepth: 0
 
   - script: npm ci && npm test -- --coverage
-    displayName: Run tests
+    displayName: Run tests with coverage
 
   - task: TestVerdict@0
     inputs:
       files: coverage/lcov.info
-      minLine: 80
-      minDiffLine: 90
+      minLine: '80'
+      minDiffLine: '90'
 ```
 
-See the full documentation and permission setup guide in the [GitHub repository](https://github.com/steveswinsburg/test-verdict/blob/main/AZURE_PIPELINES.md).
+## Documentation & More Examples
+
+- Full task reference, outputs, Build Service permissions, and Branch Policy setup: [AZURE_PIPELINES.md](https://github.com/steveswinsburg/test-verdict/blob/main/AZURE_PIPELINES.md)
+- Full multi-language recipes (Java, .NET, Python, Go, Node.js, OpenCover, monorepos, multi-suite, and outputs): [Azure Pipelines Recipes](https://github.com/steveswinsburg/test-verdict/blob/main/EXAMPLES.md#azure-pipelines-recipes)

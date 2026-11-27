@@ -14,6 +14,8 @@ When run in an Azure Pipelines pull request build, the `TestVerdict` task:
 
 ## Quickstart (`TestVerdict@0`)
 
+### Node.js / TypeScript (LCOV)
+
 ```yaml
 trigger:
   - main
@@ -42,7 +44,45 @@ steps:
       minDiffLine: '90'
 ```
 
+### Java / Kotlin (Gradle / Maven JaCoCo)
+
+```yaml
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - script: ./gradlew test jacocoTestReport
+    displayName: Run tests with coverage
+
+  - task: TestVerdict@0
+    inputs:
+      files: '**/build/reports/jacoco/test/jacocoTestReport.xml'
+      minLine: '80'
+      minDiffLine: '90'
+```
+
+*(For Maven builds, point `files` at `**/target/site/jacoco/jacoco.xml`.)*
+
+### .NET (Coverlet Cobertura)
+
+```yaml
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - script: dotnet test --collect:"XPlat Code Coverage" --results-directory TestResults
+    displayName: Run tests with coverage
+
+  - task: TestVerdict@0
+    inputs:
+      files: TestResults/**/coverage.cobertura.xml
+      minLine: '80'
+      minDiffLine: '90'
+```
+
 > **Note on `fetchDepth: 0`:** Azure Pipelines defaults to shallow clones (`fetchDepth: 1`). Setting `fetchDepth: 0` ensures git history is available so the task can compute PR diff coverage against `origin/<targetBranch>...HEAD`.
+
+See [EXAMPLES.md](EXAMPLES.md#azure-pipelines-recipes) for the full set of Azure Pipelines and multi-language recipes (Python, Go, OpenCover, multi-suite, monorepo, and downstream outputs).
 
 ## Task Inputs
 
