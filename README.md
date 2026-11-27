@@ -96,17 +96,19 @@ steps:
   - checkout: self
     fetchDepth: 0
 
-  - script: npm ci && npm test -- --coverage
-    displayName: Run tests with coverage
+  # Run your test & coverage command (e.g. ./gradlew test jacocoTestReport, dotnet test, or npm test -- --coverage)
 
   - task: TestVerdict@0
     inputs:
-      files: coverage/lcov.info
+      files: |
+        **/jacocoTestReport.xml
+        coverage/lcov.info
+        TestResults/**/coverage.cobertura.xml
       minLine: '80'
       minDiffLine: '90'
 ```
 
-See [AZURE_PIPELINES.md](AZURE_PIPELINES.md) for all task inputs, output variables, Build Service permissions, Branch Policy setup, and `.vsix` packaging.
+See [AZURE_PIPELINES.md](AZURE_PIPELINES.md) for Java, .NET, and Node.js quickstarts, task inputs, output variables, Build Service permissions, and Branch Policy setup, or [EXAMPLES.md](EXAMPLES.md#azure-pipelines-recipes) for the full set of Azure Pipelines recipes.
 
 ### Standalone CLI
 
@@ -249,13 +251,14 @@ git commit -m "chore: release v$(node -p "require('./package.json').version")"
 git push origin main
 ```
 
-On push to `main`, `.github/workflows/ci.yml` automatically:
+On push to `main`:
 
-1. Runs typecheck, tests, coverage, and `dist/` + Azure extension manifest verification.
-2. Publishes the new version to npmjs via Trusted Publishing (OIDC) if not already published.
-3. Creates the `v<version>` GitHub Release with auto-generated release notes.
-4. Updates the floating major tag (e.g. `v1` for `v1.x.x`) for GitHub Action consumers.
-5. Packages the Azure Pipelines `.vsix` and attaches it to the GitHub Release for manual upload to the Visual Studio Marketplace.
+- `.github/workflows/ci.yml` runs typecheck, tests, coverage, `dist/` + Azure extension manifest verification, and dogfoods Test Verdict (both the GitHub Action and standalone CLI).
+- `.github/workflows/release.yml` automatically:
+  1. Publishes the new version to npmjs via Trusted Publishing (OIDC) if not already published.
+  2. Creates the `v<version>` GitHub Release with auto-generated release notes.
+  3. Updates the floating major tag (e.g. `v1` for `v1.x.x`) for GitHub Action consumers.
+  4. Packages the Azure Pipelines `.vsix` and attaches it to the GitHub Release for manual upload to the Visual Studio Marketplace.
 
 > To list a release on GitHub Actions Marketplace, edit the created GitHub Release and check **Publish this Action to the GitHub Marketplace**.
 
