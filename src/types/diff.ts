@@ -12,6 +12,7 @@ export interface FileDiffCoverage {
   branchCovered: number;
   branchTotal: number;
   branchPct: number | null;
+  unmeasured?: boolean;
 }
 
 /** Aggregate PR diff coverage across all changed files. */

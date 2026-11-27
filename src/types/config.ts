@@ -13,6 +13,7 @@ export interface ThresholdConfig {
 export interface GroupConfig {
   name: string;
   files: string[];
+  include?: string[];
   exclude?: string[];
   format?: FormatId | 'auto';
   thresholds?: ThresholdConfig;
@@ -23,6 +24,7 @@ export interface VerdictFileConfig {
   title?: string;
   reportId?: string;
   files?: string[];
+  include?: string[];
   exclude?: string[];
   format?: FormatId | 'auto';
   thresholds?: ThresholdConfig;
@@ -34,8 +36,9 @@ export interface VerdictFileConfig {
 /** Resolved options passed into the core runner by the Action or CLI. */
 export interface RunOptions {
   workingDirectory: string;
-  configPath?: string;
+  configPath?: string | false;
   files?: string[];
+  include?: string[];
   exclude?: string[];
   format?: FormatId | 'auto';
   reportId?: string;
@@ -44,5 +47,6 @@ export interface RunOptions {
   enforce?: boolean;
   failOnEmpty?: boolean;
   changedLines?: Map<string, Set<number>>;
+  diffFetchError?: string;
   repoFiles?: string[];
 }

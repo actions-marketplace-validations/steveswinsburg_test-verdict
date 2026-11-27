@@ -58,6 +58,24 @@ describe('diff coverage and threshold evaluator', () => {
     expect(diff.pct).toBe(66.67);
     expect(diff.branchPct).toBe(50);
     expect(diff.files[0]?.uncoveredLines).toEqual([3]);
+
+    // With include/exclude options, matching absent files count as 0% covered and non-matching/excluded are skipped
+    const changedWithNew = new Map([
+      ['src/math.ts', new Set([2])],
+      ['src/new-file.ts', new Set([10, 11])],
+      ['src/new-file.test.ts', new Set([1, 2])],
+      ['docs/guide.md', new Set([1])],
+    ]);
+    const strictDiff = computeDiffCoverage(files, changedWithNew, {
+      include: ['src/**/*.ts'],
+      exclude: ['**/*.test.ts'],
+    });
+    expect(strictDiff.coverableLines).toBe(3);
+    expect(strictDiff.coveredLines).toBe(1);
+    expect(strictDiff.pct).toBe(33.33);
+    expect(strictDiff.files.map((f) => f.path)).toEqual(['src/math.ts', 'src/new-file.ts']);
+    expect(strictDiff.files[1]?.unmeasured).toBe(true);
+    expect(strictDiff.files[1]?.uncoveredLines).toEqual([10, 11]);
   });
 
   it('warns and skips unavailable metrics without falsely failing at 0%', () => {
@@ -93,6 +111,18 @@ describe('diff coverage and threshold evaluator', () => {
     expect(verdict.violations).toHaveLength(0);
     expect(verdict.warnings).toHaveLength(2);
     expect(verdict.warnings.every((w) => w.code === 'METRIC_UNAVAILABLE')).toBe(true);
+    expect(verdict.warnings[0]?.message).toContain('parsed report format(s) did not provide');
+
+    const emptyVerdict = evaluateGroup({
+      name: 'empty',
+      matchedFiles: ['lcov.info'],
+      formats: ['lcov'],
+      files: new Map(),
+      diffCoverage: null,
+      thresholds: { minLine: 80 },
+    });
+    expect(emptyVerdict.warnings[0]?.code).toBe('METRIC_UNAVAILABLE');
+    expect(emptyVerdict.warnings[0]?.message).toContain('no source files were measured');
   });
 
   it('records violations when line or diff-line thresholds are breached', () => {

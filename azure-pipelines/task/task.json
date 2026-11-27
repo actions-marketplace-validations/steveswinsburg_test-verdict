@@ -1,0 +1,233 @@
+{
+  "$schema": "https://raw.githubusercontent.com/Microsoft/azure-pipelines-task-lib/master/tasks.schema.json",
+  "id": "c7b4e1a2-6f93-4d28-9c15-8e3a7b2d4f01",
+  "name": "TestVerdict",
+  "friendlyName": "Test Verdict",
+  "description": "Universal test & code coverage PR decorator and merge gate for every test report format.",
+  "helpMarkDown": "[Documentation](https://github.com/steveswinsburg/test-verdict/blob/main/AZURE_PIPELINES.md)",
+  "category": "Test",
+  "visibility": [
+    "Build"
+  ],
+  "author": "Steve Swinsburg",
+  "minimumAgentVersion": "3.225.0",
+  "version": {
+    "Major": 0,
+    "Minor": 5,
+    "Patch": 1
+  },
+  "instanceNameFormat": "Test Verdict: $(title)",
+  "groups": [
+    {
+      "name": "thresholds",
+      "displayName": "Coverage Thresholds",
+      "isExpanded": true
+    },
+    {
+      "name": "advanced",
+      "displayName": "Advanced",
+      "isExpanded": false
+    }
+  ],
+  "inputs": [
+    {
+      "name": "files",
+      "type": "multiLine",
+      "label": "Coverage report files",
+      "defaultValue": "",
+      "required": false,
+      "helpMarkDown": "Newline or comma-separated glob patterns for coverage report files."
+    },
+    {
+      "name": "format",
+      "type": "pickList",
+      "label": "Report format",
+      "defaultValue": "auto",
+      "required": false,
+      "options": {
+        "auto": "auto",
+        "lcov": "lcov",
+        "cobertura": "cobertura",
+        "jacoco": "jacoco",
+        "istanbul": "istanbul",
+        "gocover": "gocover",
+        "opencover": "opencover"
+      },
+      "helpMarkDown": "Report format override (defaults to auto-detection)."
+    },
+    {
+      "name": "config",
+      "type": "filePath",
+      "label": "Config file path",
+      "defaultValue": ".test-verdict.yml",
+      "required": false,
+      "helpMarkDown": "Optional path to a .test-verdict.yml config file."
+    },
+    {
+      "name": "exclude",
+      "type": "multiLine",
+      "label": "Exclude source paths",
+      "defaultValue": "",
+      "required": false,
+      "helpMarkDown": "Newline or comma-separated glob patterns of source paths to exclude."
+    },
+    {
+      "name": "minLine",
+      "type": "string",
+      "label": "Minimum line coverage (%)",
+      "defaultValue": "",
+      "required": false,
+      "groupName": "thresholds",
+      "helpMarkDown": "Minimum overall line coverage percentage (0-100)."
+    },
+    {
+      "name": "minBranch",
+      "type": "string",
+      "label": "Minimum branch coverage (%)",
+      "defaultValue": "",
+      "required": false,
+      "groupName": "thresholds",
+      "helpMarkDown": "Minimum overall branch coverage percentage (0-100)."
+    },
+    {
+      "name": "minFunction",
+      "type": "string",
+      "label": "Minimum function coverage (%)",
+      "defaultValue": "",
+      "required": false,
+      "groupName": "thresholds",
+      "helpMarkDown": "Minimum overall function coverage percentage (0-100)."
+    },
+    {
+      "name": "minDiffLine",
+      "type": "string",
+      "label": "Minimum PR diff line coverage (%)",
+      "defaultValue": "",
+      "required": false,
+      "groupName": "thresholds",
+      "helpMarkDown": "Minimum PR diff (changed lines) coverage percentage (0-100)."
+    },
+    {
+      "name": "minDiffBranch",
+      "type": "string",
+      "label": "Minimum PR diff branch coverage (%)",
+      "defaultValue": "",
+      "required": false,
+      "groupName": "thresholds",
+      "helpMarkDown": "Minimum PR diff branch coverage percentage (0-100)."
+    },
+    {
+      "name": "diffBase",
+      "type": "string",
+      "label": "Git diff base ref",
+      "defaultValue": "",
+      "required": false,
+      "groupName": "thresholds",
+      "helpMarkDown": "Optional git ref to diff against. Defaults to System.PullRequest.TargetBranch on PR builds."
+    },
+    {
+      "name": "enforce",
+      "type": "boolean",
+      "label": "Enforce thresholds",
+      "defaultValue": "true",
+      "required": false,
+      "helpMarkDown": "Fail the task when coverage thresholds are breached."
+    },
+    {
+      "name": "failOnEmpty",
+      "type": "boolean",
+      "label": "Fail on empty reports",
+      "defaultValue": "true",
+      "required": false,
+      "helpMarkDown": "Fail when no coverage report files match the configured globs."
+    },
+    {
+      "name": "comment",
+      "type": "boolean",
+      "label": "Post PR comment",
+      "defaultValue": "true",
+      "required": false,
+      "helpMarkDown": "Post or update a sticky pull request comment thread with coverage results."
+    },
+    {
+      "name": "summary",
+      "type": "boolean",
+      "label": "Upload Build Summary",
+      "defaultValue": "true",
+      "required": false,
+      "helpMarkDown": "Upload the full coverage breakdown to the Azure Pipelines Build Summary tab."
+    },
+    {
+      "name": "title",
+      "type": "string",
+      "label": "Report title",
+      "defaultValue": "Test Verdict",
+      "required": false,
+      "groupName": "advanced",
+      "helpMarkDown": "Title displayed at the top of PR comments and Build Summaries."
+    },
+    {
+      "name": "reportId",
+      "type": "string",
+      "label": "Report ID",
+      "defaultValue": "default",
+      "required": false,
+      "groupName": "advanced",
+      "helpMarkDown": "Unique identifier for sticky PR comments when running multiple steps."
+    },
+    {
+      "name": "token",
+      "type": "string",
+      "label": "Azure DevOps token override",
+      "defaultValue": "",
+      "required": false,
+      "groupName": "advanced",
+      "helpMarkDown": "Optional PAT or OAuth token override. Defaults to the pipeline SystemVssConnection token."
+    },
+    {
+      "name": "workingDirectory",
+      "type": "filePath",
+      "label": "Working directory",
+      "defaultValue": "",
+      "required": false,
+      "groupName": "advanced",
+      "helpMarkDown": "Working directory containing the repository and coverage reports (defaults to Build.SourcesDirectory)."
+    }
+  ],
+  "outputVariables": [
+    {
+      "name": "lineCoverage",
+      "description": "Overall line coverage percentage, or empty if unavailable."
+    },
+    {
+      "name": "branchCoverage",
+      "description": "Overall branch coverage percentage, or empty if unavailable."
+    },
+    {
+      "name": "functionCoverage",
+      "description": "Overall function coverage percentage, or empty if unavailable."
+    },
+    {
+      "name": "diffCoverage",
+      "description": "PR diff line coverage percentage, or empty if unavailable."
+    },
+    {
+      "name": "passed",
+      "description": "Whether all configured thresholds passed (true or false)."
+    },
+    {
+      "name": "summaryJson",
+      "description": "JSON summary of the evaluation result."
+    }
+  ],
+  "execution": {
+    "Node20_1": {
+      "target": "index.cjs",
+      "argumentFormat": ""
+    },
+    "Node24": {
+      "target": "index.cjs",
+      "argumentFormat": ""
+    }
+  }
+}

@@ -15,9 +15,12 @@ inputs:
     required: false
     default: 'auto'
   config:
-    description: 'Optional path to a .test-verdict.yml config file.'
+    description: 'Optional path to a .test-verdict.yml config file, or "none"/"false" to disable config loading.'
     required: false
     default: '.test-verdict.yml'
+  include:
+    description: 'Newline or comma-separated glob patterns of source paths to include (changed files matching include but missing from reports count as 0% covered).'
+    required: false
   exclude:
     description: 'Newline or comma-separated glob patterns of source paths to exclude.'
     required: false
@@ -49,7 +52,7 @@ inputs:
     required: false
     default: 'true'
   fail-on-empty:
-    description: 'Fail when no coverage report files match the configured globs.'
+    description: 'Fail when no coverage report files match or parsed reports contain no measured source files.'
     required: false
     default: 'true'
   comment:

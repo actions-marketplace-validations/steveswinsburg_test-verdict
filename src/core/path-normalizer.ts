@@ -3,12 +3,36 @@ import path from 'node:path';
 
 const RUNNER_PREFIX_PATTERNS = [
   /^\/home\/runner\/work\/[^/]+\/[^/]+\//,
+  /^\/home\/vsts\/work\/[^/]+\/s\//,
+  /^\/Users\/runner\/work\/[^/]+\/[^/]+\//,
   /^\/github\/workspace\//,
   /^\/__w\/[^/]+\/[^/]+\//,
   /^\/workspace\//,
   /^\/app\//,
   /^[a-zA-Z]:\/a\/[^/]+\/[^/]+\//,
 ];
+
+/** Strip trailing forward slashes in O(n) time without regex backtracking. */
+export function stripTrailingSlashes(value: string): string {
+  let end = value.length;
+  while (end > 0 && value.charCodeAt(end - 1) === 47 /* '/' */) {
+    end -= 1;
+  }
+  return end === value.length ? value : value.slice(0, end);
+}
+
+/** Strip leading and trailing forward slashes in O(n) time without regex backtracking. */
+export function trimSlashes(value: string): string {
+  let start = 0;
+  let end = value.length;
+  while (start < end && value.charCodeAt(start) === 47 /* '/' */) {
+    start += 1;
+  }
+  while (end > start && value.charCodeAt(end - 1) === 47 /* '/' */) {
+    end -= 1;
+  }
+  return start === 0 && end === value.length ? value : value.slice(start, end);
+}
 
 /** Normalize slashes and strip leading `./`. */
 export function normalizePathSeparators(filePath: string): string {
@@ -20,7 +44,7 @@ export function stripKnownPrefixes(rawPath: string, workingDirectory?: string): 
   let cleaned = normalizePathSeparators(rawPath.trim());
 
   if (workingDirectory) {
-    const normWd = normalizePathSeparators(path.resolve(workingDirectory)).replace(/\/+$/, '');
+    const normWd = stripTrailingSlashes(normalizePathSeparators(path.resolve(workingDirectory)));
     if (cleaned.startsWith(`${normWd}/`)) {
       cleaned = cleaned.slice(normWd.length + 1);
     }

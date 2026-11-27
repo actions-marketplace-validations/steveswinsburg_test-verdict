@@ -4,9 +4,9 @@
 
 # Test Verdict
 
-Universal test & code coverage PR decorator and merge gate - available as both a **GitHub Action** and a **standalone CLI tool**.
+Universal test & code coverage PR decorator and merge gate - available as a **GitHub Action**, an **Azure Pipelines task**, and a **standalone CLI tool**.
 
-`test-verdict` auto-detects and aggregates coverage reports across many languages, evaluates test coverage thresholds, comments on your PR and can enforce merge gates, blocking PRs until coverage thresholds are met. Use it directly in GitHub Actions workflows or run it standalone on your machine and in any CI pipeline via `npx test-verdict`.
+`test-verdict` auto-detects and aggregates coverage reports across many languages, evaluates test coverage thresholds, comments on your PR and can enforce merge gates, blocking PRs until coverage thresholds are met. Use it directly in GitHub Actions workflows, in Azure Pipelines via the native `TestVerdict` task, or standalone via `npx test-verdict`.
 
 [![CI](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml/badge.svg)](https://github.com/steveswinsburg/test-verdict/actions/workflows/ci.yml)
 [![npm](https://img.shields.io/npm/v/test-verdict.svg)](https://www.npmjs.com/package/test-verdict)
@@ -19,6 +19,7 @@ Universal test & code coverage PR decorator and merge gate - available as both a
 - **Sticky PR comment & Job Step Summary** - updates a single PR comment in place, with a full breakdown in the workflow summary.
 - **Branch-protection ready** - fails the check on threshold breaches when `enforce: true` so PRs cannot merge until passing.
 - **Fork-PR safe** - gracefully degrades to Job Step Summary + exit-code gating if Github token permissions don't allow commenting.
+- **Azure Pipelines task** - native `TestVerdict` extension task with sticky Azure DevOps PR comments, Build Summary upload, and output variables.
 - **Standalone CLI tool** - zero-dependency CLI you can run locally, in pre-push hooks, or in any CI provider via `npx test-verdict`.
 
 ### Example PR Comment
@@ -28,6 +29,8 @@ Universal test & code coverage PR decorator and merge gate - available as both a
 > | Suite | Lines | Branches | Functions | PR Diff | Status |
 > | :--- | ---: | ---: | ---: | ---: | :---: |
 > | Overall | 91.1% (1552/1703) | 70.4% (386/548) | 96.2% (75/78) | 94.4% (34/36) | ✅ Pass |
+
+By default, GitHub attributes PR comments posted with `GITHUB_TOKEN` to `github-actions` Bot. See [CUSTOM_BOT.md](CUSTOM_BOT.md) if you want comments posted under a custom bot name and avatar (such as `test-verdict` Bot).
 
 ## Supported Formats
 
@@ -40,9 +43,11 @@ Universal test & code coverage PR decorator and merge gate - available as both a
 | **Go `coverprofile`** | Go (`go test -coverprofile=coverage.out`) |
 | **OpenCover XML** | .NET (`OpenCover`, `AltCover`) |
 
-See [EXAMPLES.md](EXAMPLES.md) for full recipes covering every report format, parameter combination, and standalone CLI usage.
+See [EXAMPLES.md](EXAMPLES.md) for full recipes covering every report format, GitHub Actions, Azure Pipelines, parameter combinations, and standalone CLI usage.
 
-## Quickstart (GitHub Actions)
+## Quickstart
+
+### GitHub Actions
 
 ```yaml
 name: Coverage Gate
@@ -71,13 +76,59 @@ jobs:
           min-diff-line: 90
 ```
 
-### Enforcing Merge Gates
+#### Enforcing Merge Gates
 
 Set `enforce: true` (the default) and mark the workflow job as a **required status check** in your repository's Branch Protection / Rulesets. Any threshold violation fails the check and blocks the PR merge.
 
-### Fork PR Safety
+### Azure Pipelines
 
-On `pull_request` events from forks, GitHub supplies a read-only `GITHUB_TOKEN`. If `test-verdict` can't post comments with this token, it will still writes the Job Step Summary, and still enforce the thresholds.
+```yaml
+trigger:
+  - main
+
+pr:
+  - main
+
+pool:
+  vmImage: ubuntu-latest
+
+steps:
+  - checkout: self
+    fetchDepth: 0
+
+  - script: npm ci && npm test -- --coverage
+    displayName: Run tests with coverage
+
+  - task: TestVerdict@0
+    inputs:
+      files: coverage/lcov.info
+      minLine: '80'
+      minDiffLine: '90'
+```
+
+See [AZURE_PIPELINES.md](AZURE_PIPELINES.md) for all task inputs, output variables, Build Service permissions, Branch Policy setup, and `.vsix` packaging.
+
+### Standalone CLI
+
+```bash
+npx test-verdict \
+  --files coverage/lcov.info \
+  --files "**/jacocoTestReport.xml" \
+  --min-line 80 \
+  --min-diff-line 90 \
+  --diff-base origin/main
+```
+
+See [Standalone CLI](#standalone-cli) below for installation and all CLI flags, or [EXAMPLES.md](EXAMPLES.md) for format-specific commands.
+
+### Security Hardening
+
+For locked-down organization or reusable workflows:
+
+- **Avoid persisted credentials on disk**: Pass `persist-credentials: false` to `actions/checkout` (or evaluate coverage in a separate job that only downloads the coverage artifact) if earlier steps use minted GitHub App tokens or PATs.
+- **Ignore repo-committed config**: Pass `config: none` so a pull request cannot commit `.test-verdict.yml` to exclude files or override workflow thresholds.
+- **Count brand-new untested files in PR diff**: Pass `include:` globs (for example `src/**/*.ts`) and/or enable `coverage.all: true` in your test runner so newly added files absent from the report count as `0%` diff coverage instead of `0/0`.
+- **Pin by commit SHA**: Pin `steveswinsburg/test-verdict@<full-commit-sha>` in high-security pipelines.
 
 ## Monorepo Coverage Groups
 
@@ -111,7 +162,8 @@ groups:
 | :--- | :--- | :--- |
 | `files` | - | Newline or comma-separated coverage report globs |
 | `format` | `auto` | `auto` \| `lcov` \| `cobertura` \| `jacoco` \| `istanbul` \| `gocover` \| `opencover` |
-| `config` | `.test-verdict.yml` | Path to optional YAML config file |
+| `config` | `.test-verdict.yml` | Path to optional YAML config file, or `none` / `false` to disable |
+| `include` | - | Newline or comma-separated source path inclusion globs (missing diff files count as 0%) |
 | `exclude` | - | Newline or comma-separated source path exclusion globs |
 | `report-id` | `default` | Identifier for sticky PR comments across multiple steps |
 | `title` | `Test Verdict` | Heading for PR comments and step summaries |
@@ -121,7 +173,7 @@ groups:
 | `min-diff-line` | - | Minimum PR changed-lines coverage % (0–100) |
 | `min-diff-branch` | - | Minimum PR changed-lines branch coverage % (0–100) |
 | `enforce` | `true` | Fail the check when thresholds are breached |
-| `fail-on-empty` | `true` | Fail if no coverage files match `files` |
+| `fail-on-empty` | `true` | Fail if no coverage files match or parsed reports contain no measured files |
 | `comment` | `true` | Post or update sticky PR comment |
 | `step-summary` | `true` | Write Job Step Summary |
 | `github-token` | `${{ github.token }}` | Token used for PR diff and comments |
@@ -157,7 +209,9 @@ npx test-verdict --files coverage/lcov.info --min-line 80 --diff-base origin/mai
 | :--- | :--- |
 | `-f, --files <glob>` | Coverage report glob pattern (repeatable) |
 | `--format <fmt>` | `auto` \| `lcov` \| `cobertura` \| `jacoco` \| `istanbul` \| `gocover` \| `opencover` |
-| `-c, --config <path>` | Path to `.test-verdict.yml` |
+| `-c, --config <path>` | Path to `.test-verdict.yml` (or `none` / `false` to disable) |
+| `--no-config` | Disable auto-loading `.test-verdict.yml` |
+| `--include <glob>` | Source file glob to include (repeatable; missing diff files count as 0%) |
 | `-e, --exclude <glob>` | Source file glob to exclude (repeatable) |
 | `--report-id <id>` | Sticky comment report ID (default: `"default"`) |
 | `--title <text>` | Report title (default: `"Test Verdict"`) |
@@ -169,7 +223,7 @@ npx test-verdict --files coverage/lcov.info --min-line 80 --diff-base origin/mai
 | `--diff-base <ref>` | Git ref to diff against (e.g. `origin/main`, `HEAD~1`) |
 | `--working-dir <dir>` | Working directory (default: `.`) |
 | `--enforce` / `--no-enforce` | Exit non-zero on threshold breach (default: `true`) |
-| `--fail-on-empty` / `--no-fail-on-empty` | Fail when no reports match (default: `true`) |
+| `--fail-on-empty` / `--no-fail-on-empty` | Fail when no reports match or contain no measured files (default: `true`) |
 | `--markdown` | Print Markdown report to stdout |
 | `--json` | Print JSON summary to stdout |
 | `-h, --help` | Show help message |
@@ -182,6 +236,7 @@ npm ci
 npm run typecheck
 npm run test:coverage
 npm run build
+npm run package:azure   # package Azure Pipelines .vsix into dist/
 ```
 
 ### Releasing a New Version
@@ -189,17 +244,18 @@ npm run build
 ```bash
 npm version patch --no-git-tag-version   # or minor / major
 npm run build
-git add package.json package-lock.json dist/
+git add package.json package-lock.json dist/ azure-pipelines/vss-extension.json azure-pipelines/task/task.json
 git commit -m "chore: release v$(node -p "require('./package.json').version")"
 git push origin main
 ```
 
 On push to `main`, `.github/workflows/ci.yml` automatically:
 
-1. Runs typecheck, tests, coverage, and `dist/` verification across Node 22, 24, and 26.
+1. Runs typecheck, tests, coverage, and `dist/` + Azure extension manifest verification.
 2. Publishes the new version to npmjs via Trusted Publishing (OIDC) if not already published.
 3. Creates the `v<version>` GitHub Release with auto-generated release notes.
 4. Updates the floating major tag (e.g. `v1` for `v1.x.x`) for GitHub Action consumers.
+5. Packages the Azure Pipelines `.vsix` and attaches it to the GitHub Release for manual upload to the Visual Studio Marketplace.
 
 > To list a release on GitHub Actions Marketplace, edit the created GitHub Release and check **Publish this Action to the GitHub Marketplace**.
 

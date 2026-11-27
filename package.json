@@ -1,6 +1,6 @@
 {
   "name": "test-verdict",
-  "version": "0.4.0",
+  "version": "0.5.1",
   "description": "Universal test & code coverage PR decorator and merge gate supporting JaCoCo, Cobertura, LCOV, Istanbul/Jest, Go, and OpenCover.",
   "type": "module",
   "bin": {
@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:coverage": "vitest run --coverage",
-    "build": "node scripts/build.mjs"
+    "build": "node scripts/build.mjs",
+    "package:azure": "npm run build && npx --yes tfx-cli extension create --root azure-pipelines --manifest-globs vss-extension.json --output-path dist"
   },
   "keywords": [
     "github-actions",
